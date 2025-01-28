@@ -4,7 +4,6 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.drawable.AnimatedVectorDrawable;
 import android.graphics.drawable.ClipDrawable;
@@ -13,30 +12,29 @@ import android.graphics.drawable.LayerDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.method.ScrollingMovementMethod;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.app.ActivityCompat;
 import androidx.databinding.DataBindingUtil;
 
 import com.igalia.wolvic.R;
 import com.igalia.wolvic.VRBrowserActivity;
 import com.igalia.wolvic.VRBrowserApplication;
 import com.igalia.wolvic.browser.SettingsStore;
+import com.igalia.wolvic.browser.api.WSession;
 import com.igalia.wolvic.browser.engine.SessionStore;
 import com.igalia.wolvic.databinding.VoiceSearchDialogBinding;
 import com.igalia.wolvic.speech.SpeechRecognizer;
 import com.igalia.wolvic.ui.widgets.WidgetManagerDelegate;
 import com.igalia.wolvic.ui.widgets.WidgetPlacement;
-import com.igalia.wolvic.utils.DeviceType;
 import com.igalia.wolvic.utils.LocaleUtils;
-import com.igalia.wolvic.utils.ViewUtils;
 
-public class VoiceSearchWidget extends UIDialog implements WidgetManagerDelegate.PermissionListener,
-        Application.ActivityLifecycleCallbacks {
+public class VoiceSearchWidget extends UIDialog implements Application.ActivityLifecycleCallbacks {
 
     public enum State {
         LISTENING,
@@ -48,8 +46,6 @@ public class VoiceSearchWidget extends UIDialog implements WidgetManagerDelegate
         ERROR_LANGUAGE_NOT_SUPPORTED,
         PERMISSIONS
     }
-
-    private static final int VOICE_SEARCH_AUDIO_REQUEST_CODE = 7455;
 
     public interface VoiceSearchDelegate {
         default void OnVoiceSearchResult(String transcription, float confidence) {};
@@ -65,6 +61,7 @@ public class VoiceSearchWidget extends UIDialog implements WidgetManagerDelegate
     private boolean mIsSpeechRecognitionRunning = false;
     private boolean mWasSpeechRecognitionRunning = false;
     private SpeechRecognizer mCurrentSpeechRecognizer;
+    private int mVoiceStartString = R.string.voice_search_start;
 
     public VoiceSearchWidget(Context aContext) {
         super(aContext);
@@ -89,12 +86,8 @@ public class VoiceSearchWidget extends UIDialog implements WidgetManagerDelegate
 
         updateUI();
 
-        mWidgetManager.addPermissionListener(this);
-
         mSearchingAnimation = (AnimatedVectorDrawable) mBinding.voiceSearchAnimationSearching.getDrawable();
-        if (DeviceType.isPicoVR()) {
-            ViewUtils.forceAnimationOnUI(mSearchingAnimation);
-        }
+        mBinding.voiceSearchStart.setMovementMethod(new ScrollingMovementMethod());
 
         mApplication.registerActivityLifecycleCallbacks(this);
     }
@@ -114,7 +107,11 @@ public class VoiceSearchWidget extends UIDialog implements WidgetManagerDelegate
         mBinding.voiceSearchAnimationListening.setImageDrawable(new LayerDrawable(layers));
         mVoiceInputClipDrawable.setLevel(0);
 
-        mBinding.closeButton.setOnClickListener(view -> hide(KEEP_WIDGET));
+        mBinding.closeButton.setOnClickListener(view -> onDismiss());
+    }
+
+    public void setVoiceStartString(int string) {
+        mVoiceStartString = string;
     }
 
     @Override
@@ -130,7 +127,6 @@ public class VoiceSearchWidget extends UIDialog implements WidgetManagerDelegate
 
     @Override
     public void releaseWidget() {
-        mWidgetManager.removePermissionListener(this);
         mApplication.unregisterActivityLifecycleCallbacks(this);
 
         if (mCurrentSpeechRecognizer != null) {
@@ -152,14 +148,17 @@ public class VoiceSearchWidget extends UIDialog implements WidgetManagerDelegate
         aPlacement.parentAnchorY = 0.0f;
         aPlacement.translationY = WidgetPlacement.unitFromMeters(getContext(), R.dimen.settings_world_y) -
                 WidgetPlacement.unitFromMeters(getContext(), R.dimen.window_world_y);
-        aPlacement.translationZ = WidgetPlacement.unitFromMeters(getContext(), R.dimen.settings_world_z) -
-                WidgetPlacement.unitFromMeters(getContext(), R.dimen.window_world_z);
+        updatePlacementTranslationZ();
     }
 
-    public void setPlacementForKeyboard(int aHandle) {
+    @Override
+    public void updatePlacementTranslationZ() {
+        getPlacement().translationZ = WidgetPlacement.unitFromMeters(getContext(), R.dimen.tray_world_z) -
+                WidgetPlacement.getWindowWorldZMeters(getContext());
+    }
+
+    public void setPlacement(int aHandle) {
         mWidgetPlacement.parentHandle = aHandle;
-        mWidgetPlacement.translationY = 0;
-        mWidgetPlacement.translationZ = 0;
     }
 
     SpeechRecognizer.Callback mResultCallback = new SpeechRecognizer.Callback() {
@@ -167,7 +166,7 @@ public class VoiceSearchWidget extends UIDialog implements WidgetManagerDelegate
         public void onStartListening() {
             // Handle when the api successfully opened the microphone and started listening
             Log.d(LOGTAG, "===> START_LISTEN");
-            mBinding.voiceSearchStart.setText( getContext().getString(R.string.voice_search_start));
+            mBinding.voiceSearchStart.setText( getContext().getString(mVoiceStartString));
         }
 
         @Override
@@ -228,36 +227,63 @@ public class VoiceSearchWidget extends UIDialog implements WidgetManagerDelegate
 
     };
 
-    public void startVoiceSearch() {
-        if (ActivityCompat.checkSelfPermission(getContext().getApplicationContext(), Manifest.permission.RECORD_AUDIO) !=
-                PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions((Activity)getContext(), new String[]{Manifest.permission.RECORD_AUDIO},
-                    VOICE_SEARCH_AUDIO_REQUEST_CODE);
+    private void ensurePermissionsAndStartVoiceSearch() {
+        if (!mWidgetManager.isPermissionGranted(Manifest.permission.RECORD_AUDIO)) {
+            mWidgetManager.requestPermission(getContext().getString(R.string.voice_search_tooltip),
+                    Manifest.permission.RECORD_AUDIO,
+                    WidgetManagerDelegate.OriginatorType.APPLICATION,
+                    new WSession.PermissionDelegate.Callback() {
+
+                        @NonNull
+                        @Override
+                        public String toString() {
+                            return "voice permissions callback";
+                        }
+
+                        @Override
+                        public void grant() {
+                            startVoiceSearch();
+                        }
+
+                        @Override
+                        public void reject() {
+                            setPermissionNotGranted();
+                            hide(KEEP_WIDGET);
+                            stopVoiceSearch();
+                        }
+                    });
         } else {
-            String locale = LocaleUtils.getVoiceSearchLanguageId(getContext());
-            boolean storeData = SettingsStore.getInstance(getContext()).isSpeechDataCollectionEnabled();
-            if (SessionStore.get().getActiveSession().isPrivateMode()) {
-                storeData = false;
-            }
-
-            mIsSpeechRecognitionRunning = true;
-            mCurrentSpeechRecognizer = mApplication.getSpeechRecognizer();
-
-            SpeechRecognizer.Settings settings = new SpeechRecognizer.Settings();
-            settings.locale = locale;
-            settings.storeData = storeData;
-            settings.productTag = getContext().getString(R.string.voice_app_id);
-
-            mCurrentSpeechRecognizer.start(settings, mResultCallback);
+            startVoiceSearch();
         }
     }
 
+    private void startVoiceSearch() {
+        setStartListeningState();
+
+        String locale = LocaleUtils.getVoiceSearchLanguageId(getContext());
+        boolean storeData = SettingsStore.getInstance(getContext()).isSpeechDataCollectionEnabled();
+        if (SessionStore.get().getActiveSession().isPrivateMode()) {
+            storeData = false;
+        }
+
+        mIsSpeechRecognitionRunning = true;
+        mCurrentSpeechRecognizer = mApplication.getSpeechRecognizer();
+
+        SpeechRecognizer.Settings settings = new SpeechRecognizer.Settings();
+        settings.locale = locale;
+        settings.storeData = storeData;
+        settings.productTag = getContext().getString(R.string.voice_app_id);
+
+        mCurrentSpeechRecognizer.start(settings, mResultCallback);
+    }
+
     public void stopVoiceSearch() {
-        try {
-            mCurrentSpeechRecognizer.stop();
-        } catch (Exception e) {
-            Log.d(LOGTAG, e.getLocalizedMessage() != null ? e.getLocalizedMessage() : "Unknown voice error");
-            e.printStackTrace();
+        if (mCurrentSpeechRecognizer != null) {
+            try {
+                mCurrentSpeechRecognizer.stop();
+            } catch (Exception e) {
+                Log.w(LOGTAG, "Error stopping voice search: " + e);
+            }
         }
 
         mIsSpeechRecognitionRunning = false;
@@ -265,37 +291,19 @@ public class VoiceSearchWidget extends UIDialog implements WidgetManagerDelegate
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        boolean granted = false;
-        if (requestCode == VOICE_SEARCH_AUDIO_REQUEST_CODE) {
-            for (int result: grantResults) {
-                if (result == PackageManager.PERMISSION_GRANTED) {
-                    granted = true;
-                    break;
-                }
-            }
-
-            if (granted) {
-                show(REQUEST_FOCUS);
-
-            } else {
-                super.show(REQUEST_FOCUS);
-                setPermissionNotGranted();
-            }
-        }
-    }
-
-    @Override
     public void show(@ShowFlags int aShowFlags) {
+        if (mApplication.getSpeechRecognizer() == null) {
+            Log.e(LOGTAG, "Speech recognizer not available");
+            return;
+        }
+
         if (!mApplication.getSpeechRecognizer().shouldDisplayStoreDataPrompt() ||
                 SettingsStore.getInstance(getContext()).isSpeechDataCollectionEnabled() ||
                 SettingsStore.getInstance(getContext()).isSpeechDataCollectionReviewed()) {
             mWidgetPlacement.parentHandle = mWidgetManager.getFocusedWindow().getHandle();
             super.show(aShowFlags);
 
-            setStartListeningState();
-
-            startVoiceSearch();
+            ensurePermissionsAndStartVoiceSearch();
 
         } else {
             mWidgetManager.getFocusedWindow().showDialog(
@@ -318,7 +326,7 @@ public class VoiceSearchWidget extends UIDialog implements WidgetManagerDelegate
     @Override
     public void hide(@HideFlags int aHideFlags) {
         super.hide(aHideFlags);
-        mBinding.voiceSearchStart.setText( getContext().getString(R.string.voice_search_start));
+        mBinding.voiceSearchStart.setText(getContext().getString(mVoiceStartString));
         stopVoiceSearch();
         mBinding.setState(State.LISTENING);
     }
@@ -373,7 +381,7 @@ public class VoiceSearchWidget extends UIDialog implements WidgetManagerDelegate
     @Override
     public void onActivityResumed(Activity activity) {
         if (mWasSpeechRecognitionRunning) {
-            startVoiceSearch();
+            ensurePermissionsAndStartVoiceSearch();
         }
     }
 

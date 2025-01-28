@@ -14,7 +14,6 @@ import android.os.Bundle;
 import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.TextView;
 
 import androidx.databinding.DataBindingUtil;
 
@@ -83,24 +82,40 @@ class PrivacyOptionsView extends SettingsView {
             SessionStore.get().clearCache(WRuntime.ClearFlags.ALL_CACHES);
         });
 
-        TextView permissionsTitleText = findViewById(R.id.permissionsTitle);
-        permissionsTitleText.setText(getContext().getString(R.string.security_options_permissions_title, getContext().getString(R.string.app_name)));
+        mBinding.clearUserData.setOnClickListener(v -> {
+            showClearUserDataDialog();
+        });
+
+        mBinding.permissionsTitle.setText(getContext().getString(R.string.security_options_permissions_title, getContext().getString(R.string.app_name)));
 
         mPermissionButtons = new ArrayList<>();
-        mPermissionButtons.add(Pair.create(findViewById(R.id.cameraPermissionSwitch), Manifest.permission.CAMERA));
-        mPermissionButtons.add(Pair.create(findViewById(R.id.microphonePermissionSwitch), Manifest.permission.RECORD_AUDIO));
-        mPermissionButtons.add(Pair.create(findViewById(R.id.locationPermissionSwitch), Manifest.permission.ACCESS_FINE_LOCATION));
-        mPermissionButtons.add(Pair.create(findViewById(R.id.storagePermissionSwitch), Manifest.permission.WRITE_EXTERNAL_STORAGE));
+        mPermissionButtons.add(Pair.create(mBinding.microphonePermissionSwitch, Manifest.permission.RECORD_AUDIO));
 
-        if (DeviceType.isOculusBuild() || DeviceType.isWaveBuild() || DeviceType.isPicoVR()) {
-            findViewById(R.id.cameraPermissionSwitch).setVisibility(View.GONE);
+        if (DeviceType.isOculusBuild() || DeviceType.isWaveBuild()) {
+            mBinding.cameraPermissionSwitch.setVisibility(View.GONE);
+        } else {
+            mPermissionButtons.add(Pair.create(mBinding.cameraPermissionSwitch, Manifest.permission.CAMERA));
         }
+
         if (DeviceType.isOculusBuild()) {
-            findViewById(R.id.locationPermissionSwitch).setVisibility(View.GONE);
+            mBinding.storagePermissionSwitch.setVisibility(View.GONE);
+            mBinding.locationPermissionSwitch.setVisibility(View.GONE);
+        } else {
+            mPermissionButtons.add(Pair.create(mBinding.storagePermissionSwitch, Manifest.permission.WRITE_EXTERNAL_STORAGE));
+            mPermissionButtons.add(Pair.create(mBinding.locationPermissionSwitch, Manifest.permission.ACCESS_FINE_LOCATION));
+
+            // Display a warning message if approximate location is available but precise location is not.
+            boolean hasCoarseLocation = mWidgetManager.isPermissionGranted(Manifest.permission.ACCESS_COARSE_LOCATION);
+            boolean hasFineLocation = mWidgetManager.isPermissionGranted(Manifest.permission.ACCESS_FINE_LOCATION);
+            mBinding.locationPermissionWarning.setVisibility((hasCoarseLocation && !hasFineLocation) ? VISIBLE : GONE);
         }
 
-        for (Pair<SwitchSetting, String> button: mPermissionButtons) {
-            button.first.setChecked(mWidgetManager.isPermissionGranted(button.second));
+        for (Pair<SwitchSetting, String> button : mPermissionButtons) {
+            if (button.second.equals(Manifest.permission.ACCESS_FINE_LOCATION)) {
+                button.first.setChecked(mWidgetManager.isPermissionGranted(Manifest.permission.ACCESS_COARSE_LOCATION));
+            } else {
+                button.first.setChecked(mWidgetManager.isPermissionGranted(button.second));
+            }
             button.first.setOnCheckedChangeListener((compoundButton, enabled, apply) ->
                     togglePermission(button.first, button.second));
         }
@@ -125,6 +140,9 @@ class PrivacyOptionsView extends SettingsView {
         mBinding.crashReportsDataSwitch.setOnCheckedChangeListener(mCrashReportsListener);
         setCrashReports(SettingsStore.getInstance(getContext()).isCrashReportingEnabled(), false);
 
+        mBinding.useSystemRootCASwitch.setOnCheckedChangeListener(mUseSystemRootCAListener);
+        setUseSystemRootCA(SettingsStore.getInstance(getContext()).isSystemRootCAEnabled(), false);
+
         mBinding.popUpsBlockingSwitch.setOnCheckedChangeListener(mPopUpsBlockingListener);
         setPopUpsBlocking(SettingsStore.getInstance(getContext()).isPopUpsBlockingEnabled(), false);
 
@@ -137,7 +155,7 @@ class PrivacyOptionsView extends SettingsView {
         setAutocomplete(SettingsStore.getInstance(getContext()).isAutocompleteEnabled(), false);
 
         mBinding.searchEngineButton.setOnClickListener(v -> mDelegate.showView(SettingViewType.SEARCH_ENGINE));
-        String searchEngineName = SearchEngineWrapper.get(getContext()).getCurrentSearchEngine().getName();
+        String searchEngineName = SearchEngineWrapper.get(getContext()).resolveCurrentSearchEngine().getName();
         mBinding.searchEngineDescription.setText(searchEngineName);
 
         mBinding.webxrSwitch.setOnCheckedChangeListener(mWebXRListener);
@@ -163,7 +181,7 @@ class PrivacyOptionsView extends SettingsView {
             aButton.setChecked(true);
 
         } else {
-            mWidgetManager.requestPermission("", aPermission, new WSession.PermissionDelegate.Callback() {
+            mWidgetManager.requestPermission("", aPermission, WidgetManagerDelegate.OriginatorType.APPLICATION, new WSession.PermissionDelegate.Callback() {
                 @Override
                 public void grant() {
                     aButton.setChecked(true);
@@ -198,6 +216,10 @@ class PrivacyOptionsView extends SettingsView {
 
     private SwitchSetting.OnCheckedChangeListener mCrashReportsListener = (compoundButton, value, doApply) -> {
         setCrashReports(value, doApply);
+    };
+
+    private SwitchSetting.OnCheckedChangeListener mUseSystemRootCAListener = (compoundButton, value, doApply) -> {
+        setUseSystemRootCA(value, doApply);
     };
 
     private SwitchSetting.OnCheckedChangeListener mPopUpsBlockingListener = (compoundButton, value, doApply) -> {
@@ -240,6 +262,10 @@ class PrivacyOptionsView extends SettingsView {
 
         if (mBinding.crashReportsDataSwitch.isChecked() != SettingsStore.CRASH_REPORTING_DEFAULT) {
             setCrashReports(SettingsStore.CRASH_REPORTING_DEFAULT, true);
+        }
+
+        if (mBinding.useSystemRootCASwitch.isChecked() != SettingsStore.SYSTEM_ROOT_CA_DEFAULT) {
+            setUseSystemRootCA(SettingsStore.SYSTEM_ROOT_CA_DEFAULT, true);
         }
 
         if (mBinding.popUpsBlockingSwitch.isChecked() != SettingsStore.POP_UPS_BLOCKING_DEFAULT) {
@@ -316,6 +342,19 @@ class PrivacyOptionsView extends SettingsView {
 
         if (doApply) {
             SettingsStore.getInstance(getContext()).setCrashReportingEnabled(value);
+        }
+    }
+
+    private void setUseSystemRootCA(boolean value, boolean doApply) {
+        boolean prevValue = SettingsStore.getInstance(getContext()).isSystemRootCAEnabled();
+
+        mBinding.useSystemRootCASwitch.setOnCheckedChangeListener(null);
+        mBinding.useSystemRootCASwitch.setValue(value, false);
+        mBinding.useSystemRootCASwitch.setOnCheckedChangeListener(mUseSystemRootCAListener);
+
+        if (doApply) {
+            SettingsStore.getInstance(getContext()).setSystemRootCAEnabled(value);
+            showRestartDialog(() -> {setUseSystemRootCA(prevValue, true);});
         }
     }
 

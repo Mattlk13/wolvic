@@ -657,6 +657,20 @@ DeviceDelegateWaveVR::SetReorientTransform(const vrb::Matrix& aMatrix) {
 }
 
 void
+DeviceDelegateWaveVR::Reorient(const vrb::Matrix& transform, ReorientMode mode) {
+  switch (mode) {
+    case ReorientMode::SIX_DOF:
+      m.reorientMatrix = DeviceUtils::CalculateReorientationMatrixOnHeadLock(transform, GetHeadTransform().GetTranslation());
+      break;
+    case ReorientMode::NO_ROLL:
+      m.reorientMatrix = DeviceUtils::CalculateReorientationMatrixWithoutRoll(transform, GetHeadTransform().GetTranslation());
+      break;
+    default:
+      VRB_ERROR("Unsupported reorient mode %d", mode);
+  }
+}
+
+void
 DeviceDelegateWaveVR::SetClearColor(const vrb::Color& aColor) {
   m.clearColor = aColor;
 }
@@ -854,6 +868,7 @@ HandToString(ElbowModel::HandEnum hand) {
 
 void
 DeviceDelegateWaveVR::StartFrame(const FramePrediction aPrediction) {
+  mShouldRender = false;
   VRB_GL_CHECK(glClearColor(m.clearColor.Red(), m.clearColor.Green(), m.clearColor.Blue(), m.clearColor.Alpha()));
   if (!m.lastSubmitDiscarded) {
     m.leftFBOIndex = WVR_GetAvailableTextureIndex(m.leftTextureQueue);
@@ -948,6 +963,7 @@ DeviceDelegateWaveVR::StartFrame(const FramePrediction aPrediction) {
       }
     }
   }
+  mShouldRender = true;
 }
 
 void

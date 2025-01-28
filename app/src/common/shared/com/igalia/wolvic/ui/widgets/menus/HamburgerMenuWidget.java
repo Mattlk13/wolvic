@@ -3,6 +3,7 @@ package com.igalia.wolvic.ui.widgets.menus;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.os.Build;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.webkit.URLUtil;
@@ -12,6 +13,7 @@ import androidx.annotation.Nullable;
 import androidx.databinding.DataBindingUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.igalia.wolvic.BuildConfig;
 import com.igalia.wolvic.R;
 import com.igalia.wolvic.VRBrowserActivity;
 import com.igalia.wolvic.browser.SettingsStore;
@@ -44,8 +46,15 @@ public class HamburgerMenuWidget extends UIWidget implements
     public interface MenuDelegate {
         void onSendTab();
         void onResize();
+        void onFindInPage();
         void onSwitchMode();
         void onAddons();
+        void onSaveWebApp();
+        void onPassthrough();
+        boolean isPassthroughEnabled();
+        void onPageZoomIn();
+        void onPageZoomOut();
+        int getCurrentZoomLevel();
     }
 
     public static final int SWITCH_ITEM_ID = 0;
@@ -84,8 +93,11 @@ public class HamburgerMenuWidget extends UIWidget implements
         binding.list.addOnScrollListener(mScrollListener);
         binding.list.setHasFixedSize(true);
         binding.list.setItemViewCacheSize(20);
-        binding.list.setDrawingCacheEnabled(true);
-        binding.list.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
+        // Drawing Cache is deprecated in API level 28: https://developer.android.com/reference/android/view/View#getDrawingCache().
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+            binding.list.setDrawingCacheEnabled(true);
+            binding.list.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
+        }
 
         updateItems();
     }
@@ -175,40 +187,122 @@ public class HamburgerMenuWidget extends UIWidget implements
     private void updateItems() {
         mItems = new ArrayList<>();
 
-        mItems.add(new HamburgerMenuAdapter.MenuItem.Builder(
-        HamburgerMenuAdapter.MenuItem.TYPE_ADDONS_SETTINGS,
-        (menuItem) -> {
-            if (mDelegate != null) {
-                mDelegate.onAddons();
+        // In kiosk mode, only resize, find in page and passthrough are available.
+        if (!mWidgetManager.getFocusedWindow().isKioskMode()) {
+            final Session activeSession = SessionStore.get().getActiveSession();
+
+            if (!BuildConfig.FLAVOR_backend.equals("chromium")) {
+                mItems.add(new HamburgerMenuAdapter.MenuItem.Builder(
+                        HamburgerMenuAdapter.MenuItem.TYPE_ADDONS_SETTINGS,
+                        (menuItem) -> {
+                            if (mDelegate != null) {
+                                mDelegate.onAddons();
+                            }
+                            return null;
+                        }).build());
+
+                String url = activeSession.getCurrentUri();
+                boolean showAddons = (URLUtil.isHttpsUrl(url) || URLUtil.isHttpUrl(url)) && !mWidgetManager.getFocusedWindow().isNativeContentVisible();
+                final SessionState tab = ComponentsAdapter.get().getSessionStateForSession(activeSession);
+                if (tab != null && showAddons) {
+                    final List<WebExtensionState> extensions = ComponentsAdapter.get().getSortedEnabledExtensions();
+                    extensions.forEach((extension) -> {
+                        if (!extension.getAllowedInPrivateBrowsing() && activeSession.isPrivateMode()) {
+                            return;
+                        }
+
+                        // Do not show builtin extensions in the hamburger menu. As they are inside the APK, their URLs
+                        // always start with "resource://android".
+                        if (extension.getUrl().startsWith("resource://android")) {
+                            return;
+                        }
+
+                        final WebExtensionState tabExtensionState = tab.getExtensionState().get(extension.getId());
+                        if (extension.getBrowserAction() != null) {
+                            addOrUpdateAddonMenuItem(
+                                    extension,
+                                    extension.getBrowserAction(),
+                                    tabExtensionState != null ? tabExtensionState.getBrowserAction() : null);
+                        }
+                        if (extension.getPageAction() != null) {
+                            addOrUpdateAddonMenuItem(
+                                    extension,
+                                    extension.getPageAction(),
+                                    tabExtensionState != null ? tabExtensionState.getPageAction() : null);
+                        }
+                    });
+                }
             }
-            return null;
-        }).build());
 
-        final Session activeSession = SessionStore.get().getActiveSession();
-        String url = activeSession.getCurrentUri();
-        boolean showAddons = (URLUtil.isHttpsUrl(url) || URLUtil.isHttpUrl(url)) && !mWidgetManager.getFocusedWindow().isLibraryVisible();
-        final SessionState tab = ComponentsAdapter.get().getSessionStateForSession(activeSession);
-        if (tab != null && showAddons) {
-            final List<WebExtensionState> extensions = ComponentsAdapter.get().getSortedEnabledExtensions();
-            extensions.forEach((extension) -> {
-                if (!extension.getAllowedInPrivateBrowsing() && activeSession.isPrivateMode()) {
-                    return;
-                }
 
-                final WebExtensionState tabExtensionState = tab.getExtensionState().get(extension.getId());
-                if (extension.getBrowserAction() != null) {
-                    addOrUpdateAddonMenuItem(
-                            extension,
-                            extension.getBrowserAction(),
-                            tabExtensionState != null ? tabExtensionState.getBrowserAction() : null);
+            if (activeSession.getWebAppManifest() != null) {
+                mItems.add(new HamburgerMenuAdapter.MenuItem.Builder(
+                        HamburgerMenuAdapter.MenuItem.TYPE_DEFAULT,
+                        (menuItem) -> {
+                            if (mDelegate != null) {
+                                mDelegate.onSaveWebApp();
+                            }
+                            return null;
+                        })
+                        .withTitle(getContext().getString(R.string.hamburger_menu_save_web_app))
+                        .withIcon(R.drawable.ic_web_app_registration)
+                        .build());
+            }
+
+            if (mSendTabEnabled) {
+                mItems.add(new HamburgerMenuAdapter.MenuItem.Builder(
+                        HamburgerMenuAdapter.MenuItem.TYPE_DEFAULT,
+                        (menuItem) -> {
+                            if (mDelegate != null) {
+                                mDelegate.onSendTab();
+                            }
+                            return null;
+                        })
+                        .withTitle(getContext().getString(R.string.hamburger_menu_send_tab))
+                        .withIcon(R.drawable.ic_icon_tabs_sendtodevice)
+                        .build());
+            }
+
+            HamburgerMenuAdapter.MenuItem item = new HamburgerMenuAdapter.MenuItem.Builder(
+                    HamburgerMenuAdapter.MenuItem.TYPE_DEFAULT,
+                    (menuItem) -> {
+                        if (mDelegate != null) {
+                            mDelegate.onSwitchMode();
+                        }
+                        return null;
+                    })
+                    .withId(SWITCH_ITEM_ID)
+                    .withTitle(getContext().getString(R.string.hamburger_menu_switch_to_desktop))
+                    .build();
+            switch (mCurrentUAMode) {
+                case WSessionSettings.USER_AGENT_MODE_DESKTOP: {
+                    item.setIcon(R.drawable.ic_icon_ua_desktop);
                 }
-                if (extension.getPageAction() != null) {
-                    addOrUpdateAddonMenuItem(
-                            extension,
-                            extension.getPageAction(),
-                            tabExtensionState != null ? tabExtensionState.getPageAction() : null);
+                break;
+
+                case WSessionSettings.USER_AGENT_MODE_MOBILE:
+                case WSessionSettings.USER_AGENT_MODE_VR: {
+                    item.setIcon(R.drawable.ic_icon_ua_default);
                 }
-            });
+                break;
+            }
+            mItems.add(item);
+        }
+
+        // Disable "Find in Page" in the UI until it's implemented in chromium.
+        // See https://github.com/Igalia/wolvic/issues/1481
+        if (!BuildConfig.FLAVOR_backend.equals("chromium")) {
+            mItems.add(new HamburgerMenuAdapter.MenuItem.Builder(
+                    HamburgerMenuAdapter.MenuItem.TYPE_DEFAULT,
+                    (menuItem) -> {
+                        if (mDelegate != null) {
+                            mDelegate.onFindInPage();
+                        }
+                        return null;
+                    })
+                    .withTitle(getContext().getString(R.string.hamburger_menu_find_in_page))
+                    .withIcon(R.drawable.ic_icon_search)
+                    .build());
         }
 
         mItems.add(new HamburgerMenuAdapter.MenuItem.Builder(
@@ -223,44 +317,32 @@ public class HamburgerMenuWidget extends UIWidget implements
                 .withIcon(R.drawable.ic_icon_resize)
                 .build());
 
-        if (mSendTabEnabled) {
+        if (mWidgetManager != null && mWidgetManager.isPassthroughSupported()) {
             mItems.add(new HamburgerMenuAdapter.MenuItem.Builder(
                     HamburgerMenuAdapter.MenuItem.TYPE_DEFAULT,
                     (menuItem) -> {
                         if (mDelegate != null) {
-                            mDelegate.onSendTab();
+                            mDelegate.onPassthrough();
                         }
                         return null;
                     })
-                    .withTitle(getContext().getString(R.string.hamburger_menu_send_tab))
-                    .withIcon(R.drawable.ic_icon_tabs_sendtodevice)
+                    .withTitle(getContext().getString(R.string.hamburger_menu_toggle_passthrough))
+                    .withIcon(mDelegate != null && mDelegate.isPassthroughEnabled() ? R.drawable.baseline_visibility_24 : R.drawable.baseline_visibility_off_24)
                     .build());
         }
 
-        HamburgerMenuAdapter.MenuItem item = new HamburgerMenuAdapter.MenuItem.Builder(
-                HamburgerMenuAdapter.MenuItem.TYPE_DEFAULT,
-                (menuItem) -> {
-                    if (mDelegate != null) {
-                        mDelegate.onSwitchMode();
-                    }
-                    return null;
-                })
-                .withId(SWITCH_ITEM_ID)
-                .withTitle(getContext().getString(R.string.hamburger_menu_switch_to_desktop))
-                .build();
-        switch (mCurrentUAMode) {
-            case WSessionSettings.USER_AGENT_MODE_DESKTOP: {
-                item.setIcon(R.drawable.ic_icon_ua_desktop);
-            }
-            break;
-
-            case WSessionSettings.USER_AGENT_MODE_MOBILE:
-            case WSessionSettings.USER_AGENT_MODE_VR: {
-                item.setIcon(R.drawable.ic_icon_ua_default);
-            }
-            break;
+        if (mWidgetManager != null && mWidgetManager.isPageZoomEnabled() && mDelegate != null) {
+            mItems.add(new HamburgerMenuAdapter.MenuItem.Builder(
+                    HamburgerMenuAdapter.MenuItem.TYPE_ZOOM, null)
+                    .withZoom(Integer.toString(mDelegate.getCurrentZoomLevel()) + "%",
+                            (isZoomOut) -> {
+                        if (isZoomOut) mDelegate.onPageZoomOut();
+                        else mDelegate.onPageZoomIn();
+                        updateItems();
+                        return null;
+                    })
+                    .build());
         }
-        mItems.add(item);
 
         mAdapter.setItems(mItems);
         mAdapter.notifyDataSetChanged();

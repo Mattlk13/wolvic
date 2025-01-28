@@ -16,6 +16,13 @@
     android:background="@drawable/library_item_background_color"
     android:orientation="horizontal">
 
+    <LinearLayout
+        android:id="@+id/add_on_content_wrapper"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_toStartOf="@+id/add_button"
+        android:orientation="horizontal">
+
     <androidx.cardview.widget.CardView
         android:id="@+id/icon_container"
         android:layout_width="40dp"
@@ -87,6 +94,14 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/add_on_status_error_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="@color/mozac_feature_addons_error_text_color"
+            tools:text="@string/mozac_feature_addons_status_blocklisted" />
+
+        <TextView
             android:id="@+id/add_on_description"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -129,6 +144,8 @@
 
     </LinearLayout>
 
+    </LinearLayout>
+
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/add_button"
         android:layout_width="48dp"
@@ -138,7 +155,8 @@
         android:layout_marginEnd="6dp"
         android:layout_alignParentEnd="true"
         android:layout_centerVertical="true"
-        android:contentDescription="@string/mozac_feature_addons_install_addon_content_description"
+        android:contentDescription="@string/mozac_feature_addons_install_addon_content_description_2"
         app:srcCompat="@drawable/ic_icon_add"
         android:tint="@color/library_panel_icon_color" />
+
 </RelativeLayout>

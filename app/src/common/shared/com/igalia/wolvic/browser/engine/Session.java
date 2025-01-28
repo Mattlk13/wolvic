@@ -11,7 +11,10 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.preference.PreferenceManager;
+import androidx.preference.PreferenceManager;
+
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.Surface;
 import android.view.inputmethod.CursorAnchorInfo;
@@ -23,6 +26,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
+import com.igalia.wolvic.BuildConfig;
 import com.igalia.wolvic.R;
 import com.igalia.wolvic.browser.Media;
 import com.igalia.wolvic.browser.SessionChangeListener;
@@ -46,6 +50,7 @@ import com.igalia.wolvic.browser.content.TrackingProtectionPolicy;
 import com.igalia.wolvic.browser.content.TrackingProtectionStore;
 import com.igalia.wolvic.geolocation.GeolocationData;
 import com.igalia.wolvic.telemetry.TelemetryService;
+import com.igalia.wolvic.ui.adapters.WebApp;
 import com.igalia.wolvic.utils.BitmapCache;
 import com.igalia.wolvic.utils.InternalPages;
 import com.igalia.wolvic.utils.SystemUtils;
@@ -187,11 +192,8 @@ public class Session implements WContentBlocking.Delegate, WSession.NavigationDe
         mDrmStateStateListeners = new CopyOnWriteArrayList<>();
         mMedia = new Media();
 
-        if (mPrefs != null) {
-            mPrefs.registerOnSharedPreferenceChangeListener(this);
-        }
-
         mPrefs = PreferenceManager.getDefaultSharedPreferences(mContext);
+        mPrefs.registerOnSharedPreferenceChangeListener(this);
 
         InternalPages.PageResources pageResources = InternalPages.PageResources.create(R.raw.private_mode, R.raw.private_style);
         mPrivatePage = InternalPages.createAboutPage(mContext, pageResources);
@@ -210,6 +212,9 @@ public class Session implements WContentBlocking.Delegate, WSession.NavigationDe
         if (mState.mSession != null) {
             setActive(false);
             suspend();
+        } else {
+            // Notify listeners manually.
+            mSessionChangeListeners.forEach(listener -> listener.onSessionRemoved(mState.mId));
         }
 
         if (mState.mParentId != null) {
@@ -274,6 +279,8 @@ public class Session implements WContentBlocking.Delegate, WSession.NavigationDe
     }
 
     private void dumpState(WSession.ProgressDelegate aListener) {
+        if (mState.mSession == null)
+            return;
         if (mState.mIsLoading) {
             aListener.onPageStart(mState.mSession, mState.mUri);
         } else {
@@ -290,9 +297,9 @@ public class Session implements WContentBlocking.Delegate, WSession.NavigationDe
     }
 
     private void dumpState(VideoAvailabilityListener aListener) {
-        mState.mMediaElements.forEach(element -> {
-            aListener.onVideoAvailabilityChanged(element,true);
-        });
+        Media activeMedia = getActiveVideo();
+        if (activeMedia != null)
+            aListener.onVideoAvailabilityChanged(activeMedia,true);
     }
 
     private void dumpState(WebXRStateChangedListener aListener) {
@@ -654,7 +661,10 @@ public class Session implements WContentBlocking.Delegate, WSession.NavigationDe
     }
 
     public CompletableFuture<Void> captureBackgroundBitmap(int displayWidth, int displayHeight) {
-        if (mState.mSession == null || !mFirstContentfulPaint) {
+        // FIXME: calling acquireDisplay() is not well supported in the Chromium backend because
+        // that method incorrectly does some extra work handling widgets. Disable the bitmap
+        // capture in the meantime (it was not working anyway yet).
+        if (mState.mSession == null || !mFirstContentfulPaint || BuildConfig.FLAVOR_backend == "chromium") {
             return CompletableFuture.completedFuture(null);
         }
         Surface captureSurface = BitmapCache.getInstance(mContext).acquireCaptureSurface(displayWidth, displayHeight);
@@ -728,7 +738,7 @@ public class Session implements WContentBlocking.Delegate, WSession.NavigationDe
 
     public String getHomeUri() {
         String homepage = SettingsStore.getInstance(mContext).getHomepage();
-        if (homepage.equals(mContext.getString(R.string.homepage_url)) && mState.mRegion != null) {
+        if (homepage.equals(mContext.getString(R.string.HOMEPAGE_URL)) && mState.mRegion != null) {
             homepage = homepage + "?region=" + mState.mRegion;
         }
         return homepage;
@@ -754,10 +764,6 @@ public class Session implements WContentBlocking.Delegate, WSession.NavigationDe
 
     public boolean isSecure() {
         return mState.mSecurityInformation != null && mState.mSecurityInformation.isSecure;
-    }
-
-    public boolean isVideoAvailable() {
-        return mState.mMediaElements != null && mState.mMediaElements.size() > 0;
     }
 
     public boolean isFirstContentfulPaint() {
@@ -953,10 +959,15 @@ public class Session implements WContentBlocking.Delegate, WSession.NavigationDe
         return mState.mDrmState;
     }
 
+    public WebApp getWebAppManifest() {
+        return mState.mWebAppManifest;
+    }
+
     // Session Settings
 
     public int getUaMode() {
-        return mState.mSession.getSettings().getUserAgentMode();
+        return mState.mSession != null ? mState.mSession.getSettings().getUserAgentMode() :
+                WSessionSettings.USER_AGENT_MODE_MOBILE;
     }
 
     public boolean isActive() {
@@ -1006,17 +1017,17 @@ public class Session implements WContentBlocking.Delegate, WSession.NavigationDe
         }
         mState.mSettings.setUserAgentMode(mode);
         mState.mSession.getSettings().setUserAgentMode(mode);
-        if (mode == WSessionSettings.USER_AGENT_MODE_DESKTOP) {
-            mState.mSettings.setViewportMode(WSessionSettings.VIEWPORT_MODE_DESKTOP);
-        } else {
-            mState.mSettings.setViewportMode(WSessionSettings.VIEWPORT_MODE_MOBILE);
-        }
         mState.mSession.getSettings().setViewportMode(mState.mSettings.getViewportMode());
         return true;
     }
 
-    public void setUaMode(int mode) {
+    public void setUaMode(int mode, boolean reload) {
+        // the UA mode value did not change
         if (!trySetUaMode(mode))
+            return;
+
+        // the value did change, but we don't need to force a reload
+        if (!reload)
             return;
 
         String overrideUri = mode == WSessionSettings.USER_AGENT_MODE_DESKTOP ? checkForMobileSite(mState.mUri) : null;
@@ -1041,6 +1052,25 @@ public class Session implements WContentBlocking.Delegate, WSession.NavigationDe
 
     public void setParentSession(@NonNull Session parentSession) {
         mState.mParentId = parentSession.getId();
+    }
+
+    public void pageZoomIn() {
+        if (mState.mSession != null) {
+            mState.mSession.pageZoomIn();
+        }
+    }
+
+    public void pageZoomOut() {
+        if (mState.mSession != null) {
+            mState.mSession.pageZoomOut();
+        }
+    }
+
+    public int getCurrentZoomLevel() {
+        if (mState.mSession != null) {
+            return mState.mSession.getCurrentZoomLevel();
+        }
+        return 0;
     }
 
     // NavigationDelegate
@@ -1068,6 +1098,12 @@ public class Session implements WContentBlocking.Delegate, WSession.NavigationDe
 
         for (WSession.NavigationDelegate listener : mNavigationListeners) {
             listener.onLocationChange(aSession, aUri);
+        }
+
+        // TODO Check that this is the correct place to clear the stored manifest. Update the UI if needed.
+        if (mState.mWebAppManifest != null) {
+            Log.d(LOGTAG, "onLocationChange: clear stored Web app manifest");
+            mState.mWebAppManifest = null;
         }
 
         // The homepage finishes loading after the region has been updated
@@ -1121,7 +1157,15 @@ public class Session implements WContentBlocking.Delegate, WSession.NavigationDe
         if (aSession == mState.mSession) {
             Log.d(LOGTAG, "Testing for UA override");
 
-            final String userAgentOverride = sUserAgentOverride.lookupOverride(uri);
+            String userAgentOverride = sUserAgentOverride.lookupOverride(uri);
+
+            // Set the User-Agent according to the current UA settings
+            // unless we are in Desktop mode, which uses its own User-Agent value.
+            int mode = mState.mSettings.getUserAgentMode();
+            if (userAgentOverride == null) {
+                userAgentOverride = mState.mSession.getDefaultUserAgent(mode);
+            }
+
             aSession.getSettings().setUserAgentOverride(userAgentOverride);
             if (mState.mSettings != null) {
                 mState.mSettings.setUserAgentOverride(userAgentOverride);
@@ -1177,13 +1221,18 @@ public class Session implements WContentBlocking.Delegate, WSession.NavigationDe
     }
 
     @Override
-    public WResult<WSession> onNewSession(@NonNull WSession aSession, @NonNull String aUri) {
+    public WResult<WSession> onNewSession(@NonNull WSession aSession, @NonNull String aUri, OnNewSessionCallback callback) {
         mKeepAlive = System.currentTimeMillis() + KEEP_ALIVE_DURATION_MS;
         Log.d(LOGTAG, "onNewSession: " + aUri);
 
         Session session = SessionStore.get().createSession(mState.mSettings, SESSION_DO_NOT_OPEN);
         session.mState.mParentId = mState.mId;
         session.mKeepAlive = mKeepAlive;
+
+        if (callback != null) {
+            callback.onNewSession((WSession) session.mState.mSession);
+        }
+
         for (SessionChangeListener listener: mSessionChangeListeners) {
             listener.onStackSession(session);
         }
@@ -1321,6 +1370,13 @@ public class Session implements WContentBlocking.Delegate, WSession.NavigationDe
                 for (WSession.ContentDelegate listener : mContentListeners) {
                     listener.onFirstContentfulPaint(aSession);
                 }
+            } else if (!mState.mIsLoading) {
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    // onFirstContentfulPaint is not emitted sometimes when loading a page from
+                    // the cache. This is a workaround to ensure that the event is emitted.
+                    if (!mFirstContentfulPaint)
+                        onFirstContentfulPaint(aSession);
+                }, 500);
             }
         }
     }
@@ -1331,6 +1387,17 @@ public class Session implements WContentBlocking.Delegate, WSession.NavigationDe
         if (mState.mSession == aSession) {
             for (WSession.ContentDelegate listener : mContentListeners) {
                 listener.onFirstContentfulPaint(aSession);
+            }
+        }
+    }
+
+    @Override
+    public void onWebAppManifest(@NonNull WSession aSession, @NonNull WebApp webAppManifest) {
+        if (mState.mSession == aSession) {
+            mState.mWebAppManifest = webAppManifest;
+            Log.d(LOGTAG, "onWebAppManifest: received Web app manifest from " + mState.mUri);
+            for (WSession.ContentDelegate listener : mContentListeners) {
+                listener.onWebAppManifest(aSession, webAppManifest);
             }
         }
     }
@@ -1561,7 +1628,25 @@ public class Session implements WContentBlocking.Delegate, WSession.NavigationDe
         }
         return WResult.fromValue(autocompleteRequest.dismiss());
     }
-    
+
+    @Nullable
+    @Override
+    public WResult<PromptResponse> onSharePrompt(@NonNull WSession aSession, @NonNull SharePrompt prompt) {
+        if (mPromptDelegate != null) {
+            return mPromptDelegate.onSharePrompt(aSession, prompt);
+        }
+        return WResult.fromValue(prompt.dismiss());
+    }
+
+    @Nullable
+    @Override
+    public WResult<PromptResponse> onRepostConfirmPrompt(@NonNull WSession aSession, @NonNull RepostConfirmPrompt prompt) {
+        if (mPromptDelegate != null) {
+            return mPromptDelegate.onRepostConfirmPrompt(aSession, prompt);
+        }
+        return WResult.fromValue(prompt.dismiss());
+    }
+
     // HistoryDelegate
     @Override
     public void onHistoryStateChange(@NonNull WSession aSession, @NonNull WSession.HistoryDelegate.HistoryList historyList) {
@@ -1674,12 +1759,17 @@ public class Session implements WContentBlocking.Delegate, WSession.NavigationDe
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if (mContext != null) {
-            if (key.equals(mContext.getString(R.string.settings_key_geolocation_data))) {
-                GeolocationData data = GeolocationData.parse(sharedPreferences.getString(key, null));
-                if (data != null) {
-                    setRegion(data.getCountryCode());
-                }
+        if (mContext == null)
+            return;
+
+        if (key.equals(mContext.getString(R.string.settings_key_geolocation_data))) {
+            GeolocationData data = GeolocationData.parse(sharedPreferences.getString(key, null));
+            if (data != null) {
+                setRegion(data.getCountryCode());
+            }
+        } else if (key.equals(mContext.getString(R.string.settings_key_user_agent_version))) {
+            if (mState.mSettings.getUserAgentMode() != WSessionSettings.USER_AGENT_MODE_DESKTOP) {
+                setUaMode(SettingsStore.getInstance(mContext).getUaMode(), false);
             }
         }
     }
@@ -1764,6 +1854,7 @@ public class Session implements WContentBlocking.Delegate, WSession.NavigationDe
         Log.d(LOGTAG, "\tActive: " + mState.isActive());
         Log.d(LOGTAG, "\tUri: " + (mState.mUri != null ? mState.mUri : "null"));
         Log.d(LOGTAG, "\tFullscreen: " + mState.mFullScreen);
+        Log.d(LOGTAG, "\tKiosk mode: " + mState.mInKioskMode);
         Log.d(LOGTAG, "\tCan go back: " + mState.mCanGoBack);
         Log.d(LOGTAG, "\tCan go forward: " + mState.mCanGoForward);
         if (mState.mSettings != null) {

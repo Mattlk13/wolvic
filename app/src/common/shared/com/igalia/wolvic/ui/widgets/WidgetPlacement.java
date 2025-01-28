@@ -16,7 +16,6 @@ import androidx.annotation.NonNull;
 
 import com.igalia.wolvic.R;
 import com.igalia.wolvic.browser.SettingsStore;
-import com.igalia.wolvic.utils.DeviceType;
 
 public class WidgetPlacement {
     static final float WORLD_DPI_RATIO = 2.0f/720.0f;
@@ -27,16 +26,22 @@ public class WidgetPlacement {
     public static final int SCENE_ROOT_OPAQUE = 1;
     public static final int SCENE_WEBXR_INTERSTITIAL = 2;
 
+    @IntDef(value = { GRAVITY_DEFAULT, GRAVITY_CENTER_X, GRAVITY_CENTER_Y, GRAVITY_CENTER })
+    public @interface ParentAnchorGravity {}
+    public static final int GRAVITY_DEFAULT = 0x0000;
+    public static final int GRAVITY_CENTER_X = 0x0001;
+    public static final int GRAVITY_CENTER_Y = 0x0002;
+    public static final int GRAVITY_CENTER = GRAVITY_CENTER_X | GRAVITY_CENTER_Y;
+
     private WidgetPlacement() {}
     public WidgetPlacement(Context aContext) {
+        mConext = aContext;
         density = aContext.getResources().getDisplayMetrics().density;
-        // Default value
-        cylinderMapRadius = Math.abs(WidgetPlacement.floatDimension(aContext, R.dimen.window_world_z));
-        if (DeviceType.isHVRBuild()) {
-            textureScale = 1.0f;
-        }
+        updateCylinderMapRadius();
+        textureScale = SettingsStore.getInstance(aContext).getDisplayDpi() / 100.0f;
     }
 
+    private Context mConext;
     public float density;
     public int width;
     public int height;
@@ -53,6 +58,7 @@ public class WidgetPlacement {
     public int parentHandle = -1;
     public float parentAnchorX = 0.5f;
     public float parentAnchorY = 0.5f;
+    public @ParentAnchorGravity int parentAnchorGravity = GRAVITY_DEFAULT;
     public boolean visible = true;
     public @Scene int scene = SCENE_ROOT_TRANSPARENT;
     public boolean showPointer = true;
@@ -60,7 +66,7 @@ public class WidgetPlacement {
     public boolean layer = true;
     public int layerPriority = 0; // Used for depth sorting
     public boolean proxifyLayer = false;
-    public float textureScale = 0.7f;
+    public float textureScale = SettingsStore.DISPLAY_DPI_DEFAULT / 100.0f;
     // Widget will be curved if enabled.
     public boolean cylinder = true;
     public int tintColor = 0xFFFFFFFF;
@@ -75,6 +81,10 @@ public class WidgetPlacement {
      * See Widget::UpdateCylinderMatrix for more info.
      */
     public float cylinderMapRadius;
+
+    // Translation offset (in world dimensions), applied after anchors.
+    public float horizontalOffset;
+    public float verticalOffset;
 
     public WidgetPlacement clone() {
         WidgetPlacement w = new WidgetPlacement();
@@ -99,6 +109,7 @@ public class WidgetPlacement {
         this.parentHandle = w.parentHandle;
         this.parentAnchorX = w.parentAnchorX;
         this.parentAnchorY = w.parentAnchorY;
+        this.parentAnchorGravity = w.parentAnchorGravity;
         this.visible = w.visible;
         this.scene = w.scene;
         this.showPointer = w.showPointer;
@@ -113,6 +124,17 @@ public class WidgetPlacement {
         this.name = w.name;
         this.clearColor = w.clearColor;
         this.cylinderMapRadius = w.cylinderMapRadius;
+        this.horizontalOffset = w.horizontalOffset;
+        this.verticalOffset = w.verticalOffset;
+    }
+
+    public void updateCylinderMapRadius() {
+        // We should check the context to make sure it's not null here to avoid crash
+        // when we adjust windows distance after we exit from fullscreen mode.
+        if (mConext != null) {
+            // Default value
+            cylinderMapRadius = Math.abs(getWindowWorldZ(mConext));
+        }
     }
 
     public int textureWidth() {
@@ -139,6 +161,19 @@ public class WidgetPlacement {
         int paddingV = aView.getPaddingTop() + aView.getPaddingBottom();
         width = (int)Math.ceil((aView.getMeasuredWidth() + paddingH)/density) + border * 2;
         height = (int)Math.ceil((aView.getMeasuredHeight() + paddingV)/density) + border * 2;
+    }
+
+    public static float getWindowWorldZ(Context aContext) {
+        float value = SettingsStore.getInstance(aContext).getWindowDistance();
+
+        // linear interpolation between min and max positions
+        float minDistance = floatDimension(aContext, R.dimen.window_world_z_min);
+        float maxDistance = floatDimension(aContext, R.dimen.window_world_z_max);
+        return minDistance + value * (maxDistance - minDistance);
+    }
+
+    public static float getWindowWorldZMeters(Context aContext) {
+        return unitFromMeters(getWindowWorldZ(aContext));
     }
 
     public static int pixelDimension(Context aContext, int aDimensionID) {
@@ -183,7 +218,9 @@ public class WidgetPlacement {
     }
 
     public static float worldToWindowRatio(Context aContext){
-        return (WidgetPlacement.floatDimension(aContext, R.dimen.window_world_width) / SettingsStore.WINDOW_WIDTH_DEFAULT)/ WORLD_DPI_RATIO;
+        SettingsStore settingStore = SettingsStore.getInstance(aContext);
+        return (WidgetPlacement.floatDimension(aContext, R.dimen.window_world_width) / SettingsStore.WINDOW_WIDTH_DEFAULT /
+                (settingStore.getDisplayDpi() / 100.0f) / settingStore.getDisplayDensity()) / WORLD_DPI_RATIO;
     }
 
     public static float worldToDpRatio(Context aContext){

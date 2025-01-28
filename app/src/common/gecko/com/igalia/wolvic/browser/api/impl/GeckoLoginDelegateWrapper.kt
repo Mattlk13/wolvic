@@ -1,9 +1,11 @@
 package com.igalia.wolvic.browser.api.impl
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import mozilla.components.concept.storage.Login
+import mozilla.components.concept.storage.LoginEntry
 import mozilla.components.concept.storage.LoginsStorage
 import mozilla.components.service.sync.logins.GeckoLoginStorageDelegate
 import org.mozilla.geckoview.Autocomplete
@@ -13,7 +15,7 @@ class GeckoAutocompleteDelegateWrapper(private val storageDelegate: GeckoLoginSt
     Autocomplete.StorageDelegate {
 
     override fun onLoginSave(login: Autocomplete.LoginEntry) {
-        storageDelegate.onLoginSave(login.toLogin())
+        storageDelegate.onLoginSave(login.toLoginEntry())
     }
 
     override fun onLoginFetch(domain: String): GeckoResult<Array<Autocomplete.LoginEntry>>? {
@@ -33,7 +35,7 @@ class GeckoAutocompleteDelegateWrapper(private val storageDelegate: GeckoLoginSt
     }
 
     override fun onLoginUsed(login: Autocomplete.LoginEntry, useFields: Int) {
-        storageDelegate.onLoginSave(login.toLogin())
+        storageDelegate.onLoginSave(login.toLoginEntry())
     }
 
     companion object {
@@ -41,8 +43,7 @@ class GeckoAutocompleteDelegateWrapper(private val storageDelegate: GeckoLoginSt
          * Converts a GeckoView [LoginStorage.LoginEntry] to an Android Components [Login]
          */
         @JvmStatic
-        fun Autocomplete.LoginEntry.toLogin() = Login(
-            guid = guid,
+        fun Autocomplete.LoginEntry.toLoginEntry() = LoginEntry(
             origin = origin.orEmpty(),
             formActionOrigin = formActionOrigin,
             httpRealm = httpRealm,
@@ -64,8 +65,10 @@ class GeckoAutocompleteDelegateWrapper(private val storageDelegate: GeckoLoginSt
             .build()
 
         @JvmStatic
-        fun create(storage: Lazy<LoginsStorage>) : GeckoAutocompleteDelegateWrapper {
-            return GeckoAutocompleteDelegateWrapper(GeckoLoginStorageDelegate(storage))
+        fun create(storage: Lazy<LoginsStorage>, loginAutofillEnabled: Boolean) : GeckoAutocompleteDelegateWrapper {
+            return GeckoAutocompleteDelegateWrapper(GeckoLoginStorageDelegate(
+                loginStorage = storage,
+                isLoginAutofillEnabled = { loginAutofillEnabled }))
         }
     }
 }

@@ -5,6 +5,8 @@
         <attr name="navigationBarStyle" format="reference" />
         <attr name="uiButtonStyle" format="reference" />
         <attr name="navigationBarButtonStyle" format="reference" />
+        <attr name="accentedNavigationBarButtonStyle" format="reference" />
+        <attr name="headerBarButtonStyle" format="reference" />
         <attr name="fullScreenButtonStyle" format="reference" />
         <attr name="fullScreenFirstButtonStyle" format="reference" />
         <attr name="fullScreenLastButtonStyle" format="reference" />
@@ -62,9 +64,19 @@
         <item name="clipColor">@color/azure</item>
     </style>
 
-    <style name="navigationBarButtonTheme" parent="uiButtonTheme">
+    <style name="headerBarButtonTheme" parent="uiButtonTheme">
         <item name="android:background">@drawable/main_button</item>
         <item name="privateModeBackground">@drawable/main_button_private</item>
+    </style>
+
+    <style name="navigationBarButtonTheme" parent="headerBarButtonTheme">
+        <item name="android:layout_width">@dimen/nav_button_size</item>
+        <item name="android:layout_height">@dimen/nav_button_size</item>
+        <item name="android:padding">@dimen/nav_button_padding</item>
+    </style>
+
+    <style name="accentedNavigationBarButtonTheme" parent="navigationBarButtonTheme">
+        <item name="android:background">@drawable/main_button_accented</item>
     </style>
 
     <style name="fullScreenButtonTheme" parent="uiButtonTheme">
@@ -300,6 +312,20 @@
         <item name="android:clickable">true</item>
     </style>
 
+    <style name="SettingsLinkButtonStyle" parent="Widget.Material3.Button.Icon">
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:layout_height">@dimen/settings_outline_button_height</item>
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:minWidth">116dp</item>
+        <item name="android:paddingBottom">0dp</item>
+        <item name="android:paddingTop">0dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">@dimen/text_smaller_size</item>
+        <item name="iconSize">14dp</item>
+        <item name="textAllCaps">false</item>
+    </style>
+
     <style name="tabsButton">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
@@ -330,6 +356,11 @@
         <item name="android:track">@drawable/switch_track</item>
     </style>
 
+    <style name="settingsSlider">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+    </style>
+
     <style name="checkbox">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">match_parent</item>
@@ -343,6 +374,7 @@
         <item name="android:layout_width">20dp</item>
         <item name="android:layout_height">20dp</item>
         <item name="android:src">@drawable/ic_icon_tray_help_v2</item>
+        <item name="android:scaleType">fitXY</item>
         <item name="android:background">@drawable/setting_help_button_background</item>
         <item name="tintColorList">@drawable/main_button_icon_color</item>
         <item name="android:padding">3dp</item>
@@ -446,7 +478,7 @@
         <item name="android:breakStrategy">high_quality</item>
     </style>
 
-    <style name="FxR.Dark" parent="@android:style/Theme.Black.NoTitleBar.Fullscreen">
+    <style name="FxR.Dark" parent="Theme.Material3.Dark.NoActionBar">
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowActionBar">false</item>
         <item name="android:windowFullscreen">true</item>
@@ -456,6 +488,8 @@
         <item name="honeycombButtonStyle">@style/honeycombButtonTheme</item>
         <item name="navigationBarStyle">@style/navigationBarTheme</item>
         <item name="navigationBarButtonStyle">@style/navigationBarButtonTheme</item>
+        <item name="accentedNavigationBarButtonStyle">@style/accentedNavigationBarButtonTheme</item>
+        <item name="headerBarButtonStyle">@style/headerBarButtonTheme</item>
         <item name="fullScreenButtonStyle">@style/fullScreenButtonTheme</item>
         <item name="fullScreenFirstButtonStyle">@style/fullScreenFirstButtonTheme</item>
         <item name="fullScreenLastButtonStyle">@style/fullScreenLastButtonTheme</item>
@@ -478,10 +512,23 @@
         <item name="android:fastScrollStyle">@style/Widget.FastScroll</item>
         <item name="android:fastScrollOverlayPosition">atThumb</item>
         <item name="android:smoothScrollbar">true</item>
-        <item name="android:overScrollMode">ifContentScrolls</item>
+        <item name="android:overScrollMode">never</item>
 
         <!-- TextView Style -->
         <item name="android:textViewStyle">@style/ShadowTextViewStyle</item>
+
+        <!-- Phone window decoration -->
+        <item name="android:statusBarColor">@color/midnight</item>
+        <item name="android:navigationBarColor">@color/midnight</item>
+
+        <!-- Basic colors for Material buttons and other elements -->
+        <item name="colorOnSurface">@color/fog</item>
+        <item name="colorSurface">@color/asphalt</item>
+        <item name="colorOnContainer">@color/fog</item>
+        <item name="colorContainer">@color/asphalt</item>
+        <item name="colorOnSecondaryContainer">@color/fog</item>
+        <item name="colorSecondaryContainer">@color/azure</item>
+
     </style>
 
     <style name="Widget.FastScroll" parent="android:Widget.Material.FastScroll"/>

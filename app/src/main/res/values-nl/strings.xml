@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- IMPORTANT NOTE: If this file is updated anyhow, the STRs wiki must be updated accordingly:
-    https://github.com/MozillaReality/FirefoxReality/wiki/L10n -->
+    https://github.com/Igalia/wolvic/wiki/Localization -->
 
     <!-- This string is used on the virtual keyboard to label the 'Enter' key (stylized in uppercase letters as 'ENTER'). -->
     <string name="keyboard_enter_label">ENTER</string>
@@ -171,16 +171,16 @@
          opens a dialog box that contains settings that an application or Web developer might want to change. -->
     <string name="settings_developer_options">Ontwikkelaarsopties</string>
 
-    <!-- This string is used in the 'Settings' window when user is not signed into a Firefox Account -->
+    <!-- This string is used in the 'Settings' window when user is not signed into a Mozilla Account -->
     <string name="settings_fxa_account_sign_in">Aanmelden bij account</string>
 
-    <!-- This string is used in the 'Settings' window when user is signed into a Firefox Account -->
+    <!-- This string is used in the 'Settings' window when user is signed into a Mozilla Account -->
     <string name="settings_fxa_account_manage">Account beheren</string>
 
-    <!-- This string is used in the 'Account' window when user is signed into a Firefox Account -->
+    <!-- This string is used in the 'Account' window when user is signed into a Mozilla Account -->
     <string name="settings_fxa_account_sign_out">Afmelden</string>
 
-    <!-- This string is used in the 'Settings' window when user is signed into a Firefox Account, but needs to re-enter their password.
+    <!-- This string is used in the 'Settings' window when user is signed into a Mozilla Account, but needs to re-enter their password.
          Most common reason for this state is that the account password was changed on another device. -->
     <string name="settings_fxa_account_reconnect">Opnieuw verbinden</string>
 
@@ -212,14 +212,14 @@
     <string name="settings_language_choose_language_voice_search">Kies uw voorkeurstaal voor gesproken zoekopdrachten</string>
 
     <!-- This string is used to label a text label that appears in the header of 'Language Settings' ->
-         'Firefox Display Language' dialog window (accessible from the browser's Settings dialog window).
+         'Wolvic Display Language' dialog window (accessible from the browser's Settings dialog window).
          Below this string appears a list of locales for the user to choose as their preferred display
          language for the application UI.
          '%1$s' Will be replaced at runtime with the app name. -->
     <string name="settings_language_choose_display_language_title">Weergavetaal van %1$s</string>
 
     <!-- This string is used to label a text label that appears in the header description of 'Language Settings' ->
-         'Firefox Display Language' dialog window (accessible from the browser's Settings dialog window).
+         'Wolvic Display Language' dialog window (accessible from the browser's Settings dialog window).
          Below this string appears a list of locales for the user to choose as their preferred display
          language for the application UI. -->
     <string name="settings_language_choose_language_display_description">Kies de taal die wordt gebruikt voor het weergeven van menu’s, berichten en notificaties.</string>
@@ -389,17 +389,17 @@
         opens the Firfox Reality support web site in the browser window. -->
     <string name="settings_help">Help</string>
 
-    <!-- This string is displayed in the settings header under the Firefox Reality logo. When clicked the settings panel is closed
+    <!-- This string is displayed in the settings header under the Wolvic logo. When clicked the settings panel is closed
          a the survey web site in opened in the currently focused window -->
     <string name="settings_send_your_feedback">Stuur ons uw feedback</string>
 
-    <!-- This string is used in the 'Settings' window when user is signed-out of Firefox Accounts -->
+    <!-- This string is used in the 'Settings' window when user is signed-out of Mozilla Accounts -->
     <string name="settings_accounts_sign_in">Aanmelden</string>
 
-    <!-- This string is used in the 'Settings' window when user is signed into a Firefox Account -->
+    <!-- This string is used in the 'Settings' window when user is signed into a Mozilla Account -->
     <string name="settings_accounts_sign_out">Afmelden</string>
 
-    <!-- This string is used in the 'Settings' window when user is signed into a Firefox Account, but needs to re-enter their password.
+    <!-- This string is used in the 'Settings' window when user is signed into a Mozilla Account, but needs to re-enter their password.
          Most common reason for this state is that the account password was changed on another device. -->
     <string name="settings_accounts_reconnect">Opnieuw verbinden</string>
 
@@ -723,12 +723,12 @@
     <string name="security_options_login_autofill">Automatisch invullen</string>
 
     <!-- This string labels an Allow/Don't Allow switch in the Logins And Passwords settings dialog
-     and is used to enable or disable login sync with Firefox Account. If disabled the logins
-     won't be synced with the Firefox Account. -->
-    <string name="security_options_login_sync">Aanmeldingen synchroniseren met Firefox Accounts</string>
+     and is used to enable or disable login sync with Mozilla Account. If disabled the logins
+     won't be synced with the Mozilla Account. -->
+    <string name="security_options_login_sync">Aanmeldingen synchroniseren met Mozilla Accounts</string>
 
     <!-- This string labels a button in the Logins And Passwords settings dialog
-     that when clicked opens the Firefox Accounts settings panel. -->
+     that when clicked opens the Mozilla Accounts settings panel. -->
     <string name="security_options_login_fxa">Account…</string>
 
     <!-- This string labels a button in the Logins And Passwords settings dialog
@@ -800,7 +800,7 @@
     <string name="security_options_webxr_settings">Geavanceerd</string>
 
     <!-- This string is a label above the group of switches that indicates that the switches below
-         relate to Firefox data collection and use.
+         relate to Wolvic data collection and use.
          '%1$s' Will be replaced at runtime with the app name. -->
     <string name="security_options_speech_data_collection_title">Verzamelen en gebruik van gegevens door %1$s</string>
 
@@ -828,11 +828,11 @@
     <string name="off">Uit</string>
 
     <!-- This string is displayed on the left of switched that are used to enable/disable sync when the switch is enabled.
-         i.e. The history switch for Firefox account syncing-->
+         i.e. The history switch for Mozilla account syncing-->
     <string name="sync">Synchroniseren</string>
 
     <!-- This string is displayed on the left of switched that are used to enable/disable sync when the switch is enabled.
-         i.e. The history switch for Firefox account syncing-->
+         i.e. The history switch for Mozilla account syncing-->
     <string name="do_not_sync">Niet synchroniseren</string>
 
     <!-- This string is displayed in the voice-search dialog box that is shown to the user when they press the
@@ -1039,7 +1039,7 @@
     <string name="bookmarks_show_all">Alle bladwijzers tonen</string>
 
     <!-- This string is displayed is the "Sync" button in the bookmarks panel. When pressed the
-         bookmarks are synced with the Firefox account. -->
+         bookmarks are synced with the Mozilla account. -->
     <string name="bookmarks_sync">Sync</string>
 
     <!-- This string is displayed as the title of the history list, which contains the user's visited websites. -->
@@ -1246,14 +1246,14 @@
     <string name="addons_permissions_learn_more">Meer info over toestemmingen</string>
 
     <!-- This string is displayed is the "Sync" button in the history panel. When pressed the
-         history is synced with the Firefox account. -->
+         history is synced with the Mozilla account. -->
     <string name="fxa_sync">Sync</string>
 
     <!-- This string is displayed is the "Sync" button in the history panel when the sync is in progress. -->
     <string name="fxa_syncing">Synchroniseren…</string>
 
     <!-- This string is displayed in the title of the FxA sign out dialog displayed when the user clicks on the Sign out button. -->
-    <string name="fxa_signout_confirmation_title">Afmelden bij uw Firefox-account?</string>
+    <string name="fxa_signout_confirmation_title">Afmelden bij uw Mozilla-account?</string>
 
     <!-- This string is displayed in the body of the FxA sign out dialog displayed when the user clicks on the Sign out button. -->
     <string name="fxa_signout_confirmation_body">Wanneer u zicht afmeldt, kunt u geen tabbladen van andere apparaten ontvangen of verzenden. Uw bladwijzers en geschiedenis worden ook niet meer gesynchroniseerd.</string>
@@ -1452,7 +1452,7 @@
     <string name="media_pause_tooltip">Pauzeren</string>
 
     <!-- This string is for the tooltip that appears upon hovering the 'Home' button in the browser's navigation bar.
-         'Home' refers to the browser's start page (e.g., the Firefox Reality Home Page). -->
+         'Home' refers to the browser's start page (e.g., the Wolvic Home Page). -->
     <string name="home_tooltip">Startpagina</string>
 
     <!-- This string is for the tooltip that appears upon hovering the 'Voice Search' (microphone) button in the
@@ -1644,14 +1644,6 @@
          tray and the Downloads view is closed. The button it labels, when pressed, closes the Downloads view. -->
     <string name="close_downloads_tooltip">Downloads sluiten</string>
 
-    <!-- This string is for the tooltip that appears when the user hovers over the 'Library' icon in the
-         tray and the Library view is closed. The button it labels, when pressed, opens the library panel. -->
-    <string name="open_library_tooltip">Bibliotheek openen</string>
-
-    <!-- This string is for the tooltip that appears when the user hovers over the 'Library' icon in the
-         tray and the Library view is closed. The button it labels, when pressed, closes the Library panel. -->
-    <string name="close_library_tooltip">Bibliotheek sluiten</string>
-
     <!-- This string is for the tooltip that appears when the user hovers over the 'What's New' icon in the
          Navigation Bar. The button it labels, when pressed, open the release notes page. -->
     <string name="whats_new_tooltip">Wat is er nieuw</string>
@@ -1727,6 +1719,13 @@
     <!-- This string is displayed in a button of the Before Unload prompt. Clicking it confirms the navigation and leaves the page. -->
     <string name="before_unload_prompt_leave">Pagina verlaten</string>
 
+    <!-- This string is displayed in the title for dialog that warns users about a navigation that results in a repost. -->
+    <string name="repost_confirm_title">Opnieuw indienen bevestigen</string>
+    <!-- This string is displayed in the message for re-navigation to page that leads to HTTP POST. -->
+    <string name="repost_confirm_message">De pagina die je zoekt, heeft informatie gebruikt die je hebt opgegeven Als je terugkeert naar deze pagina, worden acties die je hebt uitgevoerd, mogelijk herhaald. Wil je doorgaan?</string>
+    <!-- This string is displayed in the resend button for post warning -->
+    <string name="repost_confirm_continue">Doorgaan</string>
+
     <!-- This string is displayed in a button that when pressed allows a user to view a page that has been blocked from being displayed.-->
     <string name="performance_unblock_page">Pagina deblokkeren</string>
     <!-- This string is displayed as the title of a dialog displayed when poor web page performance has been detected. -->
@@ -1785,7 +1784,7 @@
     <string name="popup_block_description_v1">Wilt u ze toch laten tonen?</string>
 
     <!-- This string is displayed on the right of the checkbox in the the pop-up blocking dialog.
-         If the checkbox is checked Firefox will never ask again to block pop-ups for this site -->
+         If the checkbox is checked Wolvic will never ask again to block pop-ups for this site -->
     <string name="popup_block_checkbox">Niet meer vragen voor deze website</string>
 
     <!-- This string is displayed on the left button of the pop-up blocking dialog.
@@ -1863,6 +1862,10 @@ the Select` button. When clicked it closes all the previously selected tabs -->
     <string name="hamburger_menu_resize">Venstergrootte wijzigen</string>
 
     <!-- This string is displayed inside the Hamburger menu at the right of the navigation bar. When clicked
+         it opens the find in page option -->
+    <string name="hamburger_menu_find_in_page">Zoeken op pagina</string>
+
+    <!-- This string is displayed inside the Hamburger menu at the right of the navigation bar. When clicked
          it opens the addons panel -->
     <string name="hamburger_menu_addons">Add-ons</string>
 
@@ -1897,14 +1900,14 @@ the Select` button. When clicked it closes all the previously selected tabs -->
 
     <!-- This string is displayed in the body of the what's new dialog that is displayed if the user has updated
          or updated the app and hasn't signed it yet. -->
-    <string name="whats_new_body_1">Meld u aan of maak een nieuwe Firefox-account aan om tabbladen van Firefox op uw desktop of mobiele apparaat naar uw headset te verzenden.</string>
+    <string name="whats_new_body_1">Meld u aan of maak een nieuwe Mozilla-account aan om tabbladen van Firefox op uw desktop of mobiele apparaat naar uw headset te verzenden.</string>
 
     <!-- This string is displayed in the body of the what's new dialog that is displayed if the user has updated
          or updated the app and hasn't signed it yet. -->
-    <string name="whats_new_body_sub_1">Met Firefox Account kunt u ook bladwijzers en uw geschiedenis met al uw apparaten synchroniseren.</string>
+    <string name="whats_new_body_sub_1">Met Mozilla Account kunt u ook bladwijzers en uw geschiedenis met al uw apparaten synchroniseren.</string>
 
     <!-- This string is displayed a button of the what's new dialog that is displayed if the user has updated
-         or updated the app and hasn't signed it yet. If clicked the user is redirected to the Firefox Account sign-in page. -->
+         or updated the app and hasn't signed it yet. If clicked the user is redirected to the Mozilla Account sign-in page. -->
     <string name="whats_new_button_sign_in">Aanmelden</string>
 
     <!-- This string is displayed a button of the what's new dialog that is displayed if the user has updated
@@ -2161,5 +2164,9 @@ the Select` button. When clicked it closes all the previously selected tabs -->
     <!-- This string is shown in the tooltip of the headset status bar icon when hovered.
     '%1$s' Will be replaced at runtime with headset battery level. -->
     <string name="tray_status_headset">Headset: %1$s</string>
+
+    <string name="new_tab">Nieuw tabblad</string>
+    <string name="new_private_tab">Nieuw privétabblad</string>
+    <string name="close_tab">Tabblad sluiten</string>
 
 </resources>

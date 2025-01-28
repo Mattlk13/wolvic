@@ -7,9 +7,11 @@ package com.igalia.wolvic.ui;
 
 import android.app.Presentation;
 import android.content.Context;
+import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.Display;
@@ -17,6 +19,10 @@ import android.view.KeyEvent;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
+import android.view.WindowManager;
+import android.view.WindowMetrics;
 
 import com.igalia.wolvic.VRBrowserActivity;
 import com.igalia.wolvic.utils.SystemUtils;
@@ -85,7 +91,18 @@ public class OffscreenDisplay {
             Display defaultDisplay = manager.getDisplay(Display.DEFAULT_DISPLAY);
 
             int flags = DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY;
-            defaultDisplay.getMetrics(mDefaultMetrics);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                WindowManager windowManager = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
+                WindowMetrics metrics = windowManager.getCurrentWindowMetrics();
+                Rect bounds = metrics.getBounds();
+                mDefaultMetrics.widthPixels = bounds.width();
+                mDefaultMetrics.heightPixels = bounds.height();
+                mDefaultMetrics.density = metrics.getDensity();
+                DisplayMetrics displayMetrics = mContext.getResources().getDisplayMetrics();
+                mDefaultMetrics.densityDpi = displayMetrics.densityDpi;
+            } else {
+                defaultDisplay.getMetrics(mDefaultMetrics);
+            }
 
             mVirtualDisplay = manager.createVirtualDisplay("OffscreenViews Overlay", mWidth, mHeight,
                     mDefaultMetrics.densityDpi, mSurface, flags);
@@ -115,24 +132,6 @@ public class OffscreenDisplay {
     class OffscreenPresentation extends Presentation {
         OffscreenPresentation(Context context, Display display) {
             super(context, display);
-        }
-
-        @Override
-        public void onCreate(Bundle savedInstanceState) {
-
-            super.onCreate(savedInstanceState);
-            try {
-                getWindow()
-                        .getDecorView()
-                        .setSystemUiVisibility(
-                                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                                        | View.SYSTEM_UI_FLAG_FULLSCREEN
-                                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
-            } catch (Exception e) {
-            }
         }
 
         @Override

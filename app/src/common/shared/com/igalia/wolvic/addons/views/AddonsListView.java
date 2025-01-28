@@ -3,6 +3,7 @@ package com.igalia.wolvic.addons.views;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Typeface;
+import android.os.Build;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -77,8 +78,11 @@ public class AddonsListView extends RecyclerView.ViewHolder implements AddonsMan
         mBinding.addonsList.addOnScrollListener(mScrollListener);
         mBinding.addonsList.setHasFixedSize(true);
         mBinding.addonsList.setItemViewCacheSize(20);
-        mBinding.addonsList.setDrawingCacheEnabled(true);
-        mBinding.addonsList.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
+        // Drawing Cache is deprecated in API level 28: https://developer.android.com/reference/android/view/View#getDrawingCache().
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+            mBinding.addonsList.setDrawingCacheEnabled(true);
+            mBinding.addonsList.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
+        }
 
         mViewModel.setIsLoading(true);
     }
@@ -165,7 +169,7 @@ public class AddonsListView extends RecyclerView.ViewHolder implements AddonsMan
                 .withIconUrl(addon.getIconUrl())
                 .withTitle(mContext.getString(
                         R.string.addons_install_dialog_title,
-                        ExtensionsKt.getTranslatedName(addon)))
+                        ExtensionsKt.translateName(addon, mContext)))
                 .withBody(mContext.getString(
                         R.string.addons_install_dialog_body,
                         permissionsHtml))
@@ -183,8 +187,7 @@ public class AddonsListView extends RecyclerView.ViewHolder implements AddonsMan
                                 mBinding.getRoot().post(() -> mBinding.addonsList.smoothScrollToPosition(0));
                                 return null;
 
-                            }, (s, throwable) -> {
-                                Log.d(LOGTAG, s);
+                            }, (throwable) -> {
                                 if (!(throwable instanceof CancellationException)) {
                                     showDownloadingAddonErrorDialog(addon);
                                 }
@@ -215,7 +218,7 @@ public class AddonsListView extends RecyclerView.ViewHolder implements AddonsMan
         PromptData data = new PromptData.Builder()
                 .withIconUrl(addon.getIconUrl())
                 .withTitle(mContext.getString(R.string.addons_download_success_dialog_title,
-                        ExtensionsKt.getTranslatedName(addon),
+                        ExtensionsKt.translateName(addon, mContext),
                         mContext.getString(R.string.app_name)))
                 .withBody(mContext.getString(R.string.addons_download_success_dialog_body))
                 .withBtnMsg(new String[]{
@@ -271,4 +274,16 @@ public class AddonsListView extends RecyclerView.ViewHolder implements AddonsMan
         });
     }
 
+    @Override
+    public void onFindMoreAddonsButtonClicked() {
+    }
+
+    @Override
+    public boolean shouldShowFindMoreAddonsButton() {
+        return false;
+    }
+
+    @Override
+    public void onLearnMoreLinkClicked(@NonNull LearnMoreLinks learnMoreLinks, @NonNull Addon addon) {
+    }
 }

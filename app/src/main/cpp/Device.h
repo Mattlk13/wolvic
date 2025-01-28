@@ -6,7 +6,9 @@
 #ifndef VRBROWSER_DEVICE_H
 #define VRBROWSER_DEVICE_H
 
+#include <map>
 #include <stdint.h>
+#include "SystemUtils.h"
 
 namespace crow {
 namespace device {
@@ -26,6 +28,7 @@ const CapabilityFlags GripSpacePosition = 1u << 13u;
 enum class Eye { Left, Right };
 enum class RenderMode { StandAlone, Immersive };
 enum class CPULevel { Normal = 0, High };
+enum class BlendMode { Opaque, AlphaBlend, Additive };
 const int32_t EyeCount = 2;
 inline int32_t EyeIndex(const Eye aEye) { return aEye == Eye::Left ? 0 : 1; }
 // The type values need to match those defined in DeviceType.java
@@ -40,6 +43,17 @@ const DeviceType PicoNeo2 = 6;
 const DeviceType PicoG2 = 7;
 const DeviceType PicoNeo3 = 8;
 const DeviceType OculusQuest2 = 9;
+const DeviceType HVR3DoF = 10;
+const DeviceType HVR6DoF = 11;
+const DeviceType Pico4x = 12;
+const DeviceType MetaQuestPro = 13;
+const DeviceType LynxR1 = 14;
+const DeviceType LenovoA3 = 15;
+const DeviceType LenovoVRX = 16;
+const DeviceType MagicLeap2 = 17;
+const DeviceType MetaQuest3 = 18;
+const DeviceType VisionGlass = 19;
+const DeviceType Pico4U = 20;
 
 enum class TargetRayMode : uint8_t { Gaze, TrackedPointer, Screen };
 

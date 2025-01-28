@@ -27,12 +27,14 @@ public:
     QUAD,
     CUBEMAP,
     EQUIRECTANGULAR,
-    PROJECTION
+    PROJECTION,
+    PASSTHROUGH
   };
 
   enum class SurfaceChange {
     Create,
-    Destroy
+    Destroy,
+    Invalidate,
   };
   typedef std::function<void(const VRLayer& aLayer,
                              SurfaceChange aChange,
@@ -51,6 +53,7 @@ public:
   bool GetDrawInFront() const;
   std::string GetName() const;
   bool IsComposited() const;
+  bool GetUseSameLayerForBothEyes() const;
 
   bool ShouldDrawBefore(const VRLayer& aLayer);
   void SetInitialized(bool aInitialized);
@@ -67,6 +70,7 @@ public:
   void SetDrawInFront(bool aDrawInFront);
   void SetName(const std::string& aName);
   void SetComposited(bool aComposited);
+  void SetUseSameLayerForBothEyes(bool aUseSame);
   void NotifySurfaceChanged(SurfaceChange aChange, const std::function<void()>& aFirstCompositeCallback);
 protected:
   struct State;
@@ -103,7 +107,7 @@ public:
   void Unbind();
 
   void SetWorldSize(const float aWidth, const float aHeight);
-  void Resize(const int32_t aWidth, const int32_t aHeight);
+  void Resize(const int32_t aWidth, const int32_t aHeight, bool force = false);
   void SetResizeDelegate(const ResizeDelegate& aDelegate);
   void SetBindDelegate(const BindDelegate& aDelegate);
   void SetSurface(jobject aSurface);
@@ -142,6 +146,8 @@ public:
   const vrb::Matrix& GetUVTransform(device::Eye aEye) const;
   void SetRadius(const float aRadius);
   void SetUVTransform(device::Eye aEye, const vrb::Matrix& aTransform);
+  void SetRotation(const vrb::Matrix& aTransform);
+  vrb::Matrix& GetRotation();
 protected:
   struct State;
   VRLayerCylinder(State& aState);
@@ -206,6 +212,21 @@ private:
   State& m;
   VRB_NO_DEFAULTS(VRLayerEquirect)
 };
+
+class VRLayerPassthrough;
+typedef std::shared_ptr<VRLayerPassthrough> VRLayerPassthroughPtr;
+
+class VRLayerPassthrough: public VRLayer {
+  public:
+    static VRLayerPassthroughPtr Create();
+  protected:
+    struct State;
+    VRLayerPassthrough(State& aState);
+    virtual ~VRLayerPassthrough() = default;
+  private:
+    State& m;
+    VRB_NO_DEFAULTS(VRLayerPassthrough)
+  };
 
 } // namespace crow
 

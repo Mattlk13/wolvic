@@ -9,6 +9,7 @@ import static com.igalia.wolvic.ui.widgets.settings.SettingsView.SettingViewType
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.os.Build;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -77,6 +78,7 @@ public class HistoryView extends LibraryView implements HistoryStore.HistoryList
     private HistoryAdapter mHistoryAdapter;
     private ClearHistoryDialogWidget mClearHistoryDialog;
     private HistoryViewModel mViewModel;
+    private List<VisitInfo> mCachedHistoryItems;
 
     public HistoryView(Context aContext, @NonNull LibraryPanel delegate) {
         super(aContext, delegate);
@@ -122,8 +124,11 @@ public class HistoryView extends LibraryView implements HistoryStore.HistoryList
         mBinding.historyList.addOnScrollListener(mScrollListener);
         mBinding.historyList.setHasFixedSize(true);
         mBinding.historyList.setItemViewCacheSize(20);
-        mBinding.historyList.setDrawingCacheEnabled(true);
-        mBinding.historyList.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
+        // Drawing Cache is deprecated in API level 28: https://developer.android.com/reference/android/view/View#getDrawingCache().
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+            mBinding.historyList.setDrawingCacheEnabled(true);
+            mBinding.historyList.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
+        }
 
         mViewModel.setIsLoading(true);
 
@@ -144,6 +149,21 @@ public class HistoryView extends LibraryView implements HistoryStore.HistoryList
             v.requestFocusFromTouch();
             return false;
         });
+    }
+
+    @Override
+    public boolean supportsSearch() {
+        return true;
+    }
+
+    @Override
+    public void updateSearchFilter(String searchFilter) {
+        setSearchFilter(searchFilter);
+        if (mCachedHistoryItems == null) {
+            updateHistory();
+        } else {
+            showHistory(mCachedHistoryItems);
+        }
     }
 
     @Override
@@ -330,6 +350,11 @@ public class HistoryView extends LibraryView implements HistoryStore.HistoryList
     private AccountObserver mAccountListener = new AccountObserver() {
 
         @Override
+        public void onReady(@Nullable OAuthAccount oAuthAccount) {
+
+        }
+
+        @Override
         public void onAuthenticated(@NonNull OAuthAccount oAuthAccount, @NonNull AuthType authType) {
             mBinding.setIsSignedIn(true);
         }
@@ -394,7 +419,7 @@ public class HistoryView extends LibraryView implements HistoryStore.HistoryList
 
     private void addSection(final @NonNull List<VisitInfo> items, @NonNull String section, long rangeStart, long rangeEnd) {
         for (int i = 0; i < items.size(); i++) {
-            if (items.get(i).getVisitTime() == rangeStart && items.get(i).getVisitType() == VisitType.NOT_A_VISIT)
+            if (items.get(i).getVisitTime() == rangeStart && items.get(i).getVisitType() == VisitType.TYPED)
                 break;
 
             if (items.get(i).getVisitTime() < rangeStart && items.get(i).getVisitTime() > rangeEnd) {
@@ -402,7 +427,9 @@ public class HistoryView extends LibraryView implements HistoryStore.HistoryList
                         section,
                         section,
                         rangeStart,
-                        VisitType.NOT_A_VISIT
+                        VisitType.TYPED,
+                        null,
+                        false
                 ));
                 break;
             }
@@ -410,6 +437,8 @@ public class HistoryView extends LibraryView implements HistoryStore.HistoryList
     }
 
     private void showHistory(List<VisitInfo> historyItems) {
+        mCachedHistoryItems = historyItems;
+
         if (historyItems == null || historyItems.size() == 0) {
             mViewModel.setIsEmpty(true);
             mViewModel.setIsLoading(false);
@@ -417,7 +446,18 @@ public class HistoryView extends LibraryView implements HistoryStore.HistoryList
         } else {
             mViewModel.setIsEmpty(false);
             mViewModel.setIsLoading(false);
-            mHistoryAdapter.setHistoryList(historyItems);
+
+            // Search by filtering the cached list.
+            if (getSearchFilter().isEmpty()) {
+                mHistoryAdapter.setHistoryList(historyItems);
+            } else {
+                List<VisitInfo> filteredHistoryItems = historyItems.stream().filter(visitInfo ->
+                        visitInfo.getVisitType() == VisitType.TYPED ||
+                                (visitInfo.getTitle() != null && visitInfo.getTitle().toLowerCase().contains(getSearchFilter()) ||
+                                        visitInfo.getUrl().toLowerCase().contains(getSearchFilter()))
+                ).collect(Collectors.toList());
+                mHistoryAdapter.setHistoryList(filteredHistoryItems);
+            }
         }
 
         mBinding.executePendingBindings();

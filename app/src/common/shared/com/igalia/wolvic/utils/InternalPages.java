@@ -12,7 +12,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import mozilla.components.browser.errorpages.ErrorPages;
 import mozilla.components.browser.errorpages.ErrorType;
 
 public class InternalPages {
@@ -117,16 +116,12 @@ public class InternalPages {
 
     public static String createErrorPageDataURI(Context context,
                                                 @Nullable String uri,
-                                                int errorType) {
-        String html = ErrorPages.INSTANCE.createErrorPage(
-                context,
-                fromSessionErrorToErrorType(errorType),
-                uri,
-                R.raw.error_pages,
-                R.raw.error_style);
+                                                int sessionError) {
+        String html = readRawResourceString(context, R.raw.error_pages);
+        String css = readRawResourceString(context, R.raw.error_style);
 
         boolean showSSLAdvanced;
-        switch (errorType) {
+        switch (sessionError) {
             case WWebRequestError.ERROR_SECURITY_SSL:
             case WWebRequestError.ERROR_SECURITY_BAD_CERT:
                 showSSLAdvanced = true;
@@ -135,10 +130,18 @@ public class InternalPages {
                 showSSLAdvanced = false;
         }
 
+        ErrorType errorType = fromSessionErrorToErrorType(sessionError);
+        html = html
+                .replace("%button%", context.getString(errorType.getRefreshButtonRes()))
+                .replace("%messageShort%", context.getString(errorType.getTitleRes()))
+                .replace("%messageLong%", context.getString(errorType.getMessageRes(), uri))
+                .replace("<ul>", "<ul role=\"presentation\">")
+                .replace("%css%", css)
+                .replace("%advancedSSLStyle%", showSSLAdvanced ? "block" : "none");
+
         if (uri != null) {
             html = html.replace("%url%", uri);
         }
-        html = html.replace("%advancedSSLStyle%", showSSLAdvanced ? "block" : "none");
 
         return "data:text/html;base64," + Base64.encodeToString(html.getBytes(), Base64.NO_WRAP);
     }

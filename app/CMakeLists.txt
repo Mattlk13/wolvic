@@ -4,6 +4,7 @@
 # Sets the minimum version of CMake required to build the native library.
 
 cmake_minimum_required(VERSION 3.4.1)
+project(wolvic)
 set(CMAKE_CXX_STANDARD 17)
 
 # Creates and names a library, sets it as either STATIC
@@ -27,15 +28,18 @@ add_library( # Sets the name of the library.
              src/main/cpp/DeviceUtils.cpp
              src/main/cpp/ElbowModel.cpp
              src/main/cpp/FadeAnimation.cpp
+             src/main/cpp/HandMeshRenderer.cpp
              src/main/cpp/Quad.cpp
+             src/main/cpp/EngineSurfaceTexture.cpp
              src/main/cpp/ExternalBlitter.cpp
              src/main/cpp/ExternalVR.cpp
-             src/main/cpp/GeckoSurfaceTexture.cpp
              src/main/cpp/GestureDelegate.cpp
              src/main/cpp/JNIUtil.cpp
+             src/main/cpp/OneEuroFilter.cpp
              src/main/cpp/Pointer.cpp
              src/main/cpp/Skybox.cpp
              src/main/cpp/SplashAnimation.cpp
+             src/main/cpp/TrackedKeyboardRenderer.cpp
              src/main/cpp/VRBrowser.cpp
              src/main/cpp/VRVideo.cpp
              src/main/cpp/VRLayer.cpp
@@ -51,103 +55,91 @@ if(WAVEVR)
 target_sources(
     native-lib
     PUBLIC
-    src/wavevr/cpp/native-lib.cpp
-    src/wavevr/cpp/DeviceDelegateWaveVR.cpp
+    ${CMAKE_SOURCE_DIR}/src/wavevr/cpp/native-lib.cpp
+    ${CMAKE_SOURCE_DIR}/src/wavevr/cpp/DeviceDelegateWaveVR.cpp
     )
-elseif(PICOVR)
-target_sources(
-        native-lib
-        PUBLIC
-        src/picovr/cpp/native-lib.cpp
-        src/picovr/cpp/DeviceDelegatePicoVR.cpp
-        src/picovr/cpp/VRBrowserPico.cpp
-)
 elseif(NOAPI)
 target_sources(
     native-lib
     PUBLIC
-    src/noapi/cpp/native-lib.cpp
-    src/noapi/cpp/DeviceDelegateNoAPI.cpp
+    ${CMAKE_SOURCE_DIR}/src/noapi/cpp/native-lib.cpp
+    ${CMAKE_SOURCE_DIR}/src/noapi/cpp/DeviceDelegateNoAPI.cpp
     )
+elseif(VISIONGLASS)
+target_sources(
+        native-lib
+        PUBLIC
+        ${CMAKE_SOURCE_DIR}/src/visionglass/cpp/native-lib.cpp
+        ${CMAKE_SOURCE_DIR}/src/visionglass/cpp/DeviceDelegateVisionGlass.cpp
+)
 elseif(HVR)
     target_sources(
             native-lib
             PUBLIC
-            src/hvr/cpp/native-lib.cpp
-            src/main/cpp/BrowserEGLContext.cpp
+            ${CMAKE_SOURCE_DIR}/src/hvr/cpp/native-lib.cpp
+            ${CMAKE_SOURCE_DIR}/src/main/cpp/BrowserEGLContext.cpp
     )
+elseif(AOSP)
+target_sources(
+        native-lib
+        PUBLIC
+        ${CMAKE_SOURCE_DIR}/src/main/cpp/native-lib.cpp
+        ${CMAKE_SOURCE_DIR}/src/main/cpp/BrowserEGLContext.cpp
+)
+find_package(game-activity REQUIRED CONFIG)
+target_link_libraries(native-lib PRIVATE game-activity::game-activity_static)
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u Java_com_google_androidgamesdk_GameActivity_initializeNativeCode")
 else()
 target_sources(
     native-lib
     PUBLIC
-    src/main/cpp/native-lib.cpp
-    src/main/cpp/BrowserEGLContext.cpp
+    ${CMAKE_SOURCE_DIR}/src/main/cpp/native-lib.cpp
+    ${CMAKE_SOURCE_DIR}/src/main/cpp/BrowserEGLContext.cpp
     )
 
 include(AndroidNdkModules)
 android_ndk_import_module_native_app_glue()
-target_link_libraries(native-lib native_app_glue)
+target_link_libraries(native-lib PRIVATE native_app_glue)
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
 endif()
 
-
 if(OPENXR)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DXR_USE_PLATFORM_ANDROID -DXR_USE_GRAPHICS_API_OPENGL_ES")
-    if (OCULUSVR)
-        include_directories(
-            ${CMAKE_SOURCE_DIR}/../third_party/OpenXR-SDK/include
-            ${CMAKE_SOURCE_DIR}/../third_party/ovr_openxr_mobile_sdk/OpenXR/Include
-            ${CMAKE_SOURCE_DIR}/../app/src/openxr/cpp
-        )
-        add_custom_command(TARGET native-lib POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy
-                ${CMAKE_SOURCE_DIR}/../third_party/ovr_openxr_mobile_sdk/OpenXR/Libs/Android/${ANDROID_ABI}/Release/libopenxr_loader.so
-                ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libopenxr_loader.so
-                )
-    elseif (HVR)
-        include_directories(
-                ${CMAKE_SOURCE_DIR}/../third_party/hvr/include
-                ${CMAKE_SOURCE_DIR}/../app/src/openxr/cpp
-        )
+    find_package(OpenXR REQUIRED CONFIG)
+    target_link_libraries(native-lib PRIVATE OpenXR::headers)
+    include_directories(${CMAKE_SOURCE_DIR}/../app/src/openxr/cpp)
+    if (HVR)
         add_custom_command(TARGET native-lib POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy
                 ${CMAKE_SOURCE_DIR}/../third_party/hvr/${ANDROID_ABI}/libxr_loader.so
                 ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libxr_loader.so
                 )
+    elseif (PICOXR)
+        add_custom_command(TARGET native-lib POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_SOURCE_DIR}/../third_party/picoxr/libs/android.${ANDROID_ABI}/libopenxr_loader.so
+            ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libopenxr_loader.so
+        )
+    else ()
+        target_link_libraries(native-lib PRIVATE OpenXR::openxr_loader)
     endif ()
     target_sources(
             native-lib
             PUBLIC
-            src/openxr/cpp/DeviceDelegateOpenXR.cpp
-            src/openxr/cpp/OpenXRSwapChain.cpp
-            src/openxr/cpp/OpenXRLayers.cpp
-            src/openxr/cpp/OpenXRInput.cpp
-            src/openxr/cpp/OpenXRInputSource.cpp
-            src/openxr/cpp/OpenXRActionSet.cpp
-            src/openxr/cpp/OpenXRExtensions.cpp
+            ${CMAKE_SOURCE_DIR}/src/openxr/cpp/DeviceDelegateOpenXR.cpp
+            ${CMAKE_SOURCE_DIR}/src/openxr/cpp/OpenXRSwapChain.cpp
+            ${CMAKE_SOURCE_DIR}/src/openxr/cpp/OpenXRLayers.cpp
+            ${CMAKE_SOURCE_DIR}/src/openxr/cpp/OpenXRGestureManager.cpp
+            ${CMAKE_SOURCE_DIR}/src/openxr/cpp/OpenXRInput.cpp
+            ${CMAKE_SOURCE_DIR}/src/openxr/cpp/OpenXRInputSource.cpp
+            ${CMAKE_SOURCE_DIR}/src/openxr/cpp/OpenXRActionSet.cpp
+            ${CMAKE_SOURCE_DIR}/src/openxr/cpp/OpenXRExtensions.cpp
+            ${CMAKE_SOURCE_DIR}/src/openxr/cpp/OpenXRPassthroughStrategy.cpp
     )
-
-elseif(OCULUSVR)
-include_directories(
-        ${CMAKE_SOURCE_DIR}/../third_party/ovr_mobile/VrApi/Include
-        ${CMAKE_SOURCE_DIR}/../third_party/OVRPlatformSDK/Include
-        ${CMAKE_SOURCE_DIR}/../app/src/oculusvr/cpp
-)
-target_sources(
-    native-lib
-    PUBLIC
-    src/oculusvr/cpp/DeviceDelegateOculusVR.cpp
-    src/oculusvr/cpp/OculusSwapChain.cpp
-    src/oculusvr/cpp/OculusVRLayers.cpp
-    )
-add_custom_command(TARGET native-lib POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-        ${CMAKE_SOURCE_DIR}/../third_party/ovr_mobile/VrApi/Libs/Android/${ANDROID_ABI}/Release/libvrapi.so
-        ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libvrapi.so
-        )
 endif()
 
 if(OCULUSVR)
+include_directories(${CMAKE_SOURCE_DIR}/../third_party/OVRPlatformSDK/Include)
 add_custom_command(TARGET native-lib POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
         ${CMAKE_SOURCE_DIR}/../third_party/OVRPlatformSDK/Android/libs/${ANDROID_ABI}/libovrplatformloader.so
@@ -169,16 +161,6 @@ find_library( # Sets the name of the path variable.
               android-lib
               android )
 
-add_library(oculusvr-lib SHARED IMPORTED)
-if(OPENXR)
-set_target_properties(oculusvr-lib PROPERTIES IMPORTED_LOCATION
-                      ${CMAKE_SOURCE_DIR}/../third_party/ovr_openxr_mobile_sdk/OpenXR/Libs/Android/${ANDROID_ABI}/Release/libopenxr_loader.so )
-else()
-set_target_properties(oculusvr-lib PROPERTIES IMPORTED_LOCATION
-                      ${CMAKE_SOURCE_DIR}/../third_party/ovr_mobile/VrApi/Libs/Android/${ANDROID_ABI}/Release/libvrapi.so )
-endif()
-
-
 add_library(ovrplatform-lib SHARED IMPORTED)
 set_target_properties(ovrplatform-lib PROPERTIES IMPORTED_LOCATION
                       ${CMAKE_SOURCE_DIR}/../third_party/OVRPlatformSDK/Android/libs/${ANDROID_ABI}/libovrplatformloader.so )
@@ -191,12 +173,35 @@ add_library(hvr-lib SHARED IMPORTED)
 set_target_properties(hvr-lib PROPERTIES IMPORTED_LOCATION
         ${CMAKE_SOURCE_DIR}/../third_party/hvr/${ANDROID_ABI}/libxr_loader.so)
 
+add_library(picoxr-lib SHARED IMPORTED)
+set_target_properties(picoxr-lib PROPERTIES IMPORTED_LOCATION
+        ${CMAKE_SOURCE_DIR}/../third_party/picoxr/libs/android.${ANDROID_ABI}/libopenxr_loader.so)
+
+if(SPACES)
+    find_package(loader REQUIRED CONFIG)
+    target_link_libraries(native-lib PRIVATE loader::openxr_loader)
+endif ()
+
+# Add dependency on tinygltf library, which is used to load hand models
+# from .glb assets. Since it is only a single C++ source and header,
+# we include them as native-lib's own build sources.
+add_definitions(-DTINYGLTF_ANDROID_LOAD_FROM_ASSETS)
+target_sources(native-lib PUBLIC
+    ${CMAKE_SOURCE_DIR}/../app/src/main/cpp/tinygltf/tiny_gltf.cc)
+include_directories(
+    ${CMAKE_SOURCE_DIR}/../app/src/main/cpp/tinygltf)
+
+# Add dependency on KTX-Software
+add_subdirectory(${CMAKE_SOURCE_DIR}/src/main/cpp/KTX-Software)
+target_link_libraries(native-lib PRIVATE ktx_read)
+target_include_directories(native-lib PRIVATE ${CMAKE_SOURCE_DIR}/src/main/cpp/KTX-Software/include)
+
 # Specifies libraries CMake should link to your target library. You
 # can link multiple libraries, such as libraries you define in this
 # build script, prebuilt third-party libraries, or system libraries.
 
 target_link_libraries( # Specifies the target library.
-                       native-lib
+                       native-lib PRIVATE
                        vrb
 
                        # Link VR_SDK_LIB exported from gradle flavors

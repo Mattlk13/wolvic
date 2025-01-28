@@ -15,9 +15,8 @@ import android.graphics.drawable.BitmapDrawable;
 import android.text.Html;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.GestureDetector;
+import android.util.Pair;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -42,10 +41,12 @@ import com.igalia.wolvic.ui.viewmodel.SettingsViewModel;
 import com.igalia.wolvic.ui.widgets.UIWidget;
 import com.igalia.wolvic.ui.widgets.WidgetPlacement;
 import com.igalia.wolvic.ui.widgets.WindowWidget;
+import com.igalia.wolvic.ui.widgets.Windows;
+import com.igalia.wolvic.ui.widgets.dialogs.ClearUserDataDialogWidget;
 import com.igalia.wolvic.ui.widgets.dialogs.RestartDialogWidget;
 import com.igalia.wolvic.ui.widgets.dialogs.UIDialog;
+import com.igalia.wolvic.utils.DeviceType;
 import com.igalia.wolvic.utils.RemoteProperties;
-import com.igalia.wolvic.utils.StringUtils;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -61,33 +62,23 @@ import mozilla.components.concept.sync.OAuthAccount;
 import mozilla.components.concept.sync.Profile;
 
 public class SettingsWidget extends UIDialog implements SettingsView.Delegate {
-
     private SettingsBinding mBinding;
     private AudioEngine mAudio;
     private SettingsView mCurrentView;
     private int mViewMarginH;
     private int mViewMarginV;
     private RestartDialogWidget mRestartDialog;
+    private ClearUserDataDialogWidget mClearUserDataDialog;
     private Accounts mAccounts;
     private Executor mUIThreadExecutor;
     private SettingsView.SettingViewType mOpenDialog;
     private SettingsViewModel mSettingsViewModel;
+    private boolean mAreMozillaAccountsDisabled;
+    private final Pair<String, String> mVersionDetail = new Pair<>(
+            "versionCode " + BuildConfig.VERSION_CODE,
+            BuildConfig.GIT_HASH + " (AC " + Build.version + ")");
+    private boolean mIsFirstVersionDetail;
 
-    class VersionGestureListener extends GestureDetector.SimpleOnGestureListener {
-
-        private boolean mIsHash;
-
-        @Override
-        public boolean onDown (MotionEvent e) {
-            mBinding.buildText.setText(mIsHash ?
-                    StringUtils.versionCodeToDate(getContext(), BuildConfig.VERSION_CODE) :
-                    BuildConfig.GIT_HASH + " (AC " + Build.version + ")");
-
-            mIsHash = !mIsHash;
-
-            return true;
-        }
-    }
 
     public SettingsWidget(Context aContext) {
         super(aContext);
@@ -106,6 +97,8 @@ public class SettingsWidget extends UIDialog implements SettingsView.Delegate {
 
     @SuppressLint("ClickableViewAccessibility")
     private void initialize() {
+        mAreMozillaAccountsDisabled = BuildConfig.FLAVOR_backend.equals("chromium");
+
         mSettingsViewModel = new ViewModelProvider(
                 (VRBrowserActivity)getContext(),
                 ViewModelProvider.AndroidViewModelFactory.getInstance(((VRBrowserActivity) getContext()).getApplication()))
@@ -115,8 +108,10 @@ public class SettingsWidget extends UIDialog implements SettingsView.Delegate {
 
         mOpenDialog = SettingsView.SettingViewType.MAIN;
 
-        mAccounts = ((VRBrowserApplication)getContext().getApplicationContext()).getAccounts();
-        mAccounts.addAccountListener(mAccountObserver);
+        if (!mAreMozillaAccountsDisabled) {
+            mAccounts = ((VRBrowserApplication) getContext().getApplicationContext()).getAccounts();
+            mAccounts.addAccountListener(mAccountObserver);
+        }
 
         mUIThreadExecutor = ((VRBrowserApplication)getContext().getApplicationContext()).getExecutors().mainThread();
 
@@ -147,10 +142,6 @@ public class SettingsWidget extends UIDialog implements SettingsView.Delegate {
         });
 
         mBinding.languageButton.setOnClickListener(view -> {
-            if (mAudio != null) {
-                mAudio.playSound(AudioEngine.Sound.CLICK);
-            }
-
             onLanguageOptionsClick();
         });
 
@@ -179,29 +170,57 @@ public class SettingsWidget extends UIDialog implements SettingsView.Delegate {
         });
 
         try {
-            PackageInfo pInfo = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0);
+            PackageInfo pInfo;
+            if (android.os.Build.VERSION.SDK_INT > android.os.Build.VERSION_CODES.S_V2) {
+                pInfo = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), PackageManager.PackageInfoFlags.of(0));
+            } else {
+                pInfo = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0);
+            }
             String app_name = getResources().getString(R.string.app_name);
             mBinding.versionText.setText(Html.fromHtml("<b>" + app_name + "</b>" +
                             " <b>" + pInfo.versionName + "</b>",
                     Html.FROM_HTML_MODE_LEGACY));
 
         } catch (PackageManager.NameNotFoundException e) {
-            e.printStackTrace();
+            Log.e(LOGTAG, "Error when getting package info:" + e.getMessage());
+            mBinding.versionText.setText(R.string.app_name);
         }
 
-        mBinding.buildText.setText("versionCode " + BuildConfig.VERSION_CODE);
+        mIsFirstVersionDetail = false;
+        mBinding.buildText.setText(mVersionDetail.first);
 
-        final GestureDetector gd = new GestureDetector(getContext(), new VersionGestureListener());
-        mBinding.settingsMasthead.setOnTouchListener((view, motionEvent) -> {
-            if (gd.onTouchEvent(motionEvent)) {
-                return true;
+        OnClickListener updateVersionDetail = v -> {
+            mIsFirstVersionDetail = !mIsFirstVersionDetail;
+            mBinding.buildText.setText(mIsFirstVersionDetail ? mVersionDetail.first : mVersionDetail.second);
+        };
+        mBinding.ffLogoSettings.setOnClickListener(updateVersionDetail);
+        mBinding.versionText.setOnClickListener(updateVersionDetail);
+
+        if (DeviceType.getStoreType() == DeviceType.StoreType.MAINLAND_CHINA) {
+            mBinding.chinaLicenseNumber.setOnClickListener(v -> {
+                if (mAudio != null) {
+                    mAudio.playSound(AudioEngine.Sound.CLICK);
+                }
+                mWidgetManager.openNewTabForeground(getResources().getString(R.string.rCN_license_link));
+                exitWholeSettings();
+            });
+        } else {
+            mBinding.surveyLink.setOnClickListener(v -> {
+                if (mAudio != null) {
+                    mAudio.playSound(AudioEngine.Sound.CLICK);
+                }
+                String uri = getResources().getString(R.string.feedback_link, BuildConfig.VERSION_NAME, DeviceType.getType());
+                mWidgetManager.openNewPageNoInterrupt(uri);
+                exitWholeSettings();
+            });
+        }
+
+        mBinding.addonsButton.setOnClickListener(view -> {
+            if (mAudio != null) {
+                mAudio.playSound(AudioEngine.Sound.CLICK);
             }
-            return view.performClick();
-        });
-
-        mBinding.surveyLink.setOnClickListener(v -> {
-            mWidgetManager.openNewTabForeground(getResources().getString(R.string.survey_link));
-            exitWholeSettings();
+            mWidgetManager.getFocusedWindow().showPanel(Windows.ContentType.ADDONS);
+            onDismiss();
         });
 
         mBinding.helpButton.setOnClickListener(view -> {
@@ -212,9 +231,13 @@ public class SettingsWidget extends UIDialog implements SettingsView.Delegate {
             onDismiss();
         });
 
-        mBinding.fxaButton.setOnClickListener(view ->
-                manageAccount()
-        );
+        mBinding.fxaButton.setOnClickListener(view -> {
+            if (mAudio != null) {
+                mAudio.playSound(AudioEngine.Sound.CLICK);
+            }
+
+            manageAccount();
+        });
 
         mBinding.developerOptionsButton.setOnClickListener(view -> {
             if (mAudio != null) {
@@ -233,11 +256,19 @@ public class SettingsWidget extends UIDialog implements SettingsView.Delegate {
         });
 
         mBinding.whatsNewButton.setOnClickListener(v -> {
+            if (mAudio != null) {
+                mAudio.playSound(AudioEngine.Sound.CLICK);
+            }
+
             SettingsStore.getInstance(getContext()).setRemotePropsVersionName(BuildConfig.VERSION_NAME);
             RemoteProperties props = mSettingsViewModel.getProps().getValue().get(BuildConfig.VERSION_NAME);
+            String whatsNewUrl;
             if (props != null) {
-                mWidgetManager.openNewTabForeground(props.getWhatsNewUrl());
+                whatsNewUrl = props.getWhatsNewUrl();
+            } else {
+                whatsNewUrl = getContext().getString(R.string.home_page_url);
             }
+            mWidgetManager.openNewTabForeground(whatsNewUrl);
             onDismiss();
         });
 
@@ -253,7 +284,8 @@ public class SettingsWidget extends UIDialog implements SettingsView.Delegate {
 
     @Override
     public void releaseWidget() {
-        mAccounts.removeAccountListener(mAccountObserver);
+        if (!mAreMozillaAccountsDisabled)
+            mAccounts.removeAccountListener(mAccountObserver);
 
         super.releaseWidget();
     }
@@ -269,8 +301,13 @@ public class SettingsWidget extends UIDialog implements SettingsView.Delegate {
         aPlacement.anchorY = 0.5f;
         aPlacement.translationY = WidgetPlacement.unitFromMeters(getContext(), R.dimen.settings_world_y) -
                                   WidgetPlacement.unitFromMeters(getContext(), R.dimen.window_world_y);
-        aPlacement.translationZ = WidgetPlacement.unitFromMeters(getContext(), R.dimen.settings_world_z) -
-                                  WidgetPlacement.unitFromMeters(getContext(), R.dimen.window_world_z);
+        updatePlacementTranslationZ();
+    }
+
+    @Override
+    public void updatePlacementTranslationZ() {
+        getPlacement().translationZ = WidgetPlacement.unitFromMeters(getContext(), R.dimen.settings_world_z) -
+                                      WidgetPlacement.getWindowWorldZMeters(getContext());
     }
 
     @Override
@@ -283,6 +320,7 @@ public class SettingsWidget extends UIDialog implements SettingsView.Delegate {
     }
 
     private void manageAccount() {
+        assert !mAreMozillaAccountsDisabled;
         switch(mAccounts.getAccountStatus()) {
             case SIGNED_OUT:
             case NEEDS_RECONNECT:
@@ -344,6 +382,11 @@ public class SettingsWidget extends UIDialog implements SettingsView.Delegate {
     private AccountObserver mAccountObserver = new AccountObserver() {
 
         @Override
+        public void onReady(@Nullable OAuthAccount oAuthAccount) {
+
+        }
+
+        @Override
         public void onAuthenticated(@NonNull OAuthAccount oAuthAccount, @NonNull AuthType authType) {
 
         }
@@ -370,6 +413,7 @@ public class SettingsWidget extends UIDialog implements SettingsView.Delegate {
     };
 
     private void updateProfile(Profile profile) {
+        assert !mAreMozillaAccountsDisabled;
         BitmapDrawable profilePicture = mAccounts.getProfilePicture();
         if (profile != null && profilePicture != null) {
             mBinding.fxaButton.setImageDrawable(profilePicture);
@@ -495,7 +539,8 @@ public class SettingsWidget extends UIDialog implements SettingsView.Delegate {
         } else {
             updateUI();
             mBinding.optionsLayout.setVisibility(View.VISIBLE);
-            updateCurrentAccountState();
+            if (!mAreMozillaAccountsDisabled)
+                updateCurrentAccountState();
         }
     }
 
@@ -511,7 +556,8 @@ public class SettingsWidget extends UIDialog implements SettingsView.Delegate {
     public void show(@ShowFlags int aShowFlags) {
         super.show(aShowFlags);
 
-        updateCurrentAccountState();
+        if (!mAreMozillaAccountsDisabled)
+            updateCurrentAccountState();
     }
 
     // SettingsView.Delegate
@@ -547,12 +593,23 @@ public class SettingsWidget extends UIDialog implements SettingsView.Delegate {
     }
 
     @Override
-    public void showRestartDialog() {
+    public void showRestartDialog(RestartDialogWidget.CancelCallback cancelCallback) {
         if (mRestartDialog == null) {
             mRestartDialog = new RestartDialogWidget(getContext());
         }
 
+        mRestartDialog.setCancelCallback(cancelCallback);
+
         mRestartDialog.show(REQUEST_FOCUS);
+    }
+
+    @Override
+    public void showClearUserDataDialog() {
+        if (mClearUserDataDialog == null) {
+            mClearUserDataDialog = new ClearUserDataDialogWidget(getContext());
+        }
+
+        mClearUserDataDialog.show(REQUEST_FOCUS);
     }
 
     @Override

@@ -17,10 +17,12 @@ import com.igalia.wolvic.browser.HistoryStore;
 import com.igalia.wolvic.browser.PermissionDelegate;
 import com.igalia.wolvic.browser.Services;
 import com.igalia.wolvic.browser.SessionChangeListener;
+import com.igalia.wolvic.browser.WebAppsStore;
 import com.igalia.wolvic.browser.adapter.ComponentsAdapter;
 import com.igalia.wolvic.browser.api.WResult;
 import com.igalia.wolvic.browser.api.WRuntime;
 import com.igalia.wolvic.browser.api.WSession;
+import com.igalia.wolvic.browser.components.BrowserIconsHelper;
 import com.igalia.wolvic.browser.components.WolvicWebExtensionRuntime;
 import com.igalia.wolvic.browser.content.TrackingProtectionStore;
 import com.igalia.wolvic.browser.extensions.BuiltinExtension;
@@ -31,6 +33,7 @@ import com.igalia.wolvic.utils.UrlUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -53,7 +56,8 @@ public class SessionStore implements
 
     private static final List<Pair<String, String>> BUILTIN_WEB_EXTENSIONS = Arrays.asList(
             new Pair<>("fxr-webcompat_youtube@mozilla.org", "resource://android/assets/extensions/fxr_youtube/"),
-            new Pair<>("fxr-webcompat_mediasession@mozilla.org", "resource://android/assets/extensions/fxr_mediasession/")
+            new Pair<>("fxr-webcompat_mediasession@mozilla.org", "resource://android/assets/extensions/fxr_mediasession/"),
+            new Pair<>("icons@mozac.org", "resource://android/assets/extensions/browser-icons/")
     );
 
     private static SessionStore mInstance;
@@ -73,15 +77,19 @@ public class SessionStore implements
     private PermissionDelegate mPermissionDelegate;
     private BookmarksStore mBookmarksStore;
     private HistoryStore mHistoryStore;
+    private WebAppsStore mWebAppStore;
     private Services mServices;
     private boolean mSuspendPending;
     private TrackingProtectionStore mTrackingProtectionStore;
     private WolvicWebExtensionRuntime mWebExtensionRuntime;
     private FxaWebChannelFeature mWebChannelsFeature;
     private Store.Subscription mStoreSubscription;
+    private BrowserIconsHelper mBrowserIconsHelper;
+    private final LinkedHashSet<SessionChangeListener> mSessionChangeListeners;
 
     private SessionStore() {
         mSessions = new ArrayList<>();
+        mSessionChangeListeners = new LinkedHashSet<>();
     }
 
     public void initialize(Context context) {
@@ -118,17 +126,19 @@ public class SessionStore implements
 
         mWebExtensionRuntime = new WolvicWebExtensionRuntime(mContext, mRuntime);
 
-        mServices = ((VRBrowserApplication)context.getApplicationContext()).getServices();
+        mServices = ((VRBrowserApplication) context.getApplicationContext()).getServices();
 
         mBookmarksStore = new BookmarksStore(context);
         mHistoryStore = new HistoryStore(context);
+        mWebAppStore = new WebAppsStore(context);
 
         // Web Extensions initialization
         BUILTIN_WEB_EXTENSIONS.forEach(extension -> BuiltinExtension.install(mWebExtensionRuntime, extension.first, extension.second));
+        mBrowserIconsHelper = new BrowserIconsHelper(context, mWebExtensionRuntime, ComponentsAdapter.get().getStore());
+
         WebCompatFeature.INSTANCE.install(mWebExtensionRuntime);
         WebCompatReporterFeature.INSTANCE.install(mWebExtensionRuntime, context.getString(R.string.app_name));
         mWebChannelsFeature = new FxaWebChannelFeature(
-                mContext,
                 null,
                 mWebExtensionRuntime,
                 ComponentsAdapter.get().getStore(),
@@ -285,6 +295,10 @@ public class SessionStore implements
         return mSessions.stream().filter(session -> session.getId().equals(aId)).findFirst().orElse(null);
     }
 
+    public @Nullable Session getSessionByUri(String uri) {
+        return mSessions.stream().filter(session -> session.getCurrentUri().equals(uri)).findFirst().orElse(null);
+    }
+
     public @Nullable Session getSession(WSession aSession) {
         return mSessions.stream().filter(session -> session.getWSession() == aSession).findFirst().orElse(null);
     }
@@ -347,6 +361,10 @@ public class SessionStore implements
         return mActiveSession;
     }
 
+    public List<Session> getSessions(boolean aPrivateMode) {
+        return mSessions.stream().filter(session -> session.isPrivateMode() == aPrivateMode).collect(Collectors.toList());
+    }
+
     public ArrayList<Session> getSortedSessions(boolean aPrivateMode) {
         ArrayList<Session> result = new ArrayList<>(mSessions);
         result.removeIf(session -> session.isPrivateMode() != aPrivateMode);
@@ -363,12 +381,24 @@ public class SessionStore implements
         mPermissionDelegate = delegate;
     }
 
+    public void addSessionChangeListener(SessionChangeListener listener) {
+        mSessionChangeListeners.add(listener);
+    }
+
+    public void removeSessionChangeListener(SessionChangeListener listener) {
+        mSessionChangeListeners.remove(listener);
+    }
+
     public BookmarksStore getBookmarkStore() {
         return mBookmarksStore;
     }
 
     public HistoryStore getHistoryStore() {
         return mHistoryStore;
+    }
+
+    public WebAppsStore getWebAppsStore() {
+        return mWebAppStore;
     }
 
     public TrackingProtectionStore getTrackingProtectionStore() {
@@ -379,8 +409,13 @@ public class SessionStore implements
         return mWebExtensionRuntime;
     }
 
+    @NonNull
+    public BrowserIconsHelper getBrowserIcons() {
+        return mBrowserIconsHelper;
+    }
+
     public void purgeSessionHistory() {
-        for (Session session: mSessions) {
+        for (Session session : mSessions) {
             session.purgeHistory();
         }
     }
@@ -479,7 +514,7 @@ public class SessionStore implements
 
     public void addPermissionException(@NonNull String uri, @SitePermission.Category int category) {
         if (mPermissionDelegate != null) {
-            mPermissionDelegate.addPermissionException(uri, category);
+            mPermissionDelegate.addPermissionException(uri, category, false);
         }
     }
 
@@ -494,27 +529,42 @@ public class SessionStore implements
     @Override
     public void onSessionAdded(Session aSession) {
         ComponentsAdapter.get().addSession(aSession);
+        for (SessionChangeListener listener : mSessionChangeListeners) {
+            listener.onSessionAdded(aSession);
+        }
     }
 
     @Override
     public void onSessionOpened(Session aSession) {
         ComponentsAdapter.get().link(aSession);
+        for (SessionChangeListener listener : mSessionChangeListeners) {
+            listener.onSessionOpened(aSession);
+        }
     }
 
     @Override
     public void onSessionClosed(Session aSession) {
         ComponentsAdapter.get().unlink(aSession);
+        for (SessionChangeListener listener : mSessionChangeListeners) {
+            listener.onSessionClosed(aSession);
+        }
     }
 
     @Override
     public void onSessionRemoved(String aId) {
         ComponentsAdapter.get().removeSession(aId);
+        for (SessionChangeListener listener : mSessionChangeListeners) {
+            listener.onSessionRemoved(aId);
+        }
     }
 
     @Override
     public void onSessionStateChanged(Session aSession, boolean aActive) {
         if (aActive) {
             ComponentsAdapter.get().selectSession(aSession);
+        }
+        for (SessionChangeListener listener : mSessionChangeListeners) {
+            listener.onSessionStateChanged(aSession, aActive);
         }
     }
 
@@ -529,6 +579,9 @@ public class SessionStore implements
             ComponentsAdapter.get().link(newSession);
         }
 
+        for (SessionChangeListener listener : mSessionChangeListeners) {
+            listener.onCurrentSessionChange(aOldSession, aSession);
+        }
     }
 
     @Override

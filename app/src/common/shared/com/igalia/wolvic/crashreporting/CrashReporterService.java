@@ -7,6 +7,7 @@ import android.os.Build;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+// TODO: Deprecated JobIntentService, see https://github.com/Igalia/wolvic/issues/805
 import androidx.core.app.JobIntentService;
 
 import com.igalia.wolvic.BuildConfig;
@@ -58,9 +59,13 @@ public class CrashReporterService extends JobIntentService {
         }
         return files;
     }
-
+    
     @Override
     protected void onHandleWork(@NonNull Intent intent) {
+        if (!EngineProvider.INSTANCE.isRuntimeCreated()) {
+            Log.e(LOGTAG, "Application crashed during startup, before the engine's runtime had been created.");
+            return;
+        }
         String action = intent.getAction();
         WRuntime.CrashReportIntent crash = EngineProvider.INSTANCE.getOrCreateRuntime(getBaseContext()).getCrashReportIntent();
         if (crash.action_crashed.equals(action)) {

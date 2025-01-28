@@ -41,7 +41,7 @@
                 android:layout_marginStart="2dp"
                 android:addStatesFromChildren="true"
                 android:orientation="horizontal"
-                app:visibleGone="@{!viewmodel.isFocused &amp;&amp; viewmodel.isUrlBarButtonsVisible}">
+                app:visibleGone="@{!viewmodel.isFindInPage &amp;&amp; !viewmodel.isFocused &amp;&amp; viewmodel.isUrlBarButtonsVisible}">
 
                 <com.igalia.wolvic.ui.views.UIButton
                     android:id="@+id/tracking"
@@ -146,8 +146,7 @@
 
                 <View
                     android:layout_width="4dp"
-                    android:layout_height="match_parent"
-                    app:visibleGone="@{!viewmodel.isUrlBarIconsVisible}"/>
+                    android:layout_height="match_parent" />
             </LinearLayout>
 
             <View
@@ -166,14 +165,6 @@
                 android:layout_centerVertical="true"
                 app:visibleGone="@{viewmodel.isUrlBarIconsVisible &amp;&amp; !viewmodel.isFocused}">
                 <ImageView
-                    android:id="@+id/loadingView"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:paddingEnd="5dp"
-                    android:contentDescription="Loading animation"
-                    android:src="@drawable/loading_shape"
-                    app:visibleGone="@{viewmodel.isLoading}" />
-                <ImageView
                     android:id="@+id/insecureIcon"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
@@ -186,8 +177,8 @@
                 android:id="@+id/urlEditText"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_marginTop="5dp"
-                android:layout_marginBottom="5dp"
+                android:layout_margin="0dp"
+                android:background="@android:color/transparent"
                 android:paddingEnd="10dp"
                 android:layout_toStartOf="@id/endButtonsLayout"
                 android:layout_toEndOf="@id/icons"
@@ -208,7 +199,18 @@
                 android:textIsSelectable="true"
                 android:textSize="16sp"
                 android:text="@{viewmodel.navigationBarUrl}"
+                app:visibleGone="@{!viewmodel.isFindInPage}"
                 app:autocompleteBackgroundColor="@color/azure" />
+
+            <mozilla.components.feature.findinpage.view.FindInPageBar
+                android:id="@+id/find_in_page"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:padding="4dp"
+                app:visibleGone="@{viewmodel.isFindInPage}"
+                app:findInPageButtonsTint="@color/white"
+                app:findInPageResultCountTextColor="@color/white"
+                app:findInPageNoMatchesTextColor="@color/fire"/>
 
             <LinearLayout
                 android:id="@+id/endButtonsLayout"
@@ -220,18 +222,30 @@
                 android:layout_marginTop="2dp"
                 android:layout_marginBottom="2dp"
                 android:layout_marginEnd="2dp"
+                app:visibleGone="@{!viewmodel.isFindInPage}"
                 android:orientation="horizontal">
 
                 <com.igalia.wolvic.ui.views.UIButton
                     android:id="@+id/microphoneButton"
                     style="@style/urlBarIconTheme"
-                    android:layout_width="@{(viewmodel.isLibraryVisible || viewmodel.isUrlEmpty) ? @dimen/url_bar_last_item_width : @dimen/url_bar_item_width}"
-                    android:background="@{(viewmodel.isLibraryVisible || viewmodel.isUrlEmpty) ? (viewmodel.isPrivateSession ? @drawable/url_button_end_private : @drawable/url_button_end) : (viewmodel.isPrivateSession ? @drawable/url_button_private : @drawable/url_button)}"
+                    android:layout_width="@{(viewmodel.isNativeContentVisible || viewmodel.isUrlEmpty) ? @dimen/url_bar_last_item_width : @dimen/url_bar_item_width}"
+                    android:background="@{(viewmodel.isNativeContentVisible || viewmodel.isUrlEmpty) ? (viewmodel.isPrivateSession ? @drawable/url_button_end_private : @drawable/url_button_end) : (viewmodel.isPrivateSession ? @drawable/url_button_private : @drawable/url_button)}"
                     android:src="@drawable/ic_icon_microphone"
                     android:tint="@color/fog"
                     android:tooltipText="@string/voice_search_tooltip"
                     app:privateMode="@{viewmodel.isPrivateSession}"
                     app:visibleGone="@{viewmodel.isMicrophoneEnabled &amp;&amp; !viewmodel.isFocused}"/>
+
+                <com.igalia.wolvic.ui.views.UIButton
+                    android:id="@+id/webAppButton"
+                    style="@style/urlBarIconTheme"
+                    android:layout_width="@{(viewmodel.isNativeContentVisible || viewmodel.isUrlEmpty) ? @dimen/url_bar_last_item_width : @dimen/url_bar_item_width}"
+                    android:background="@{(viewmodel.isNativeContentVisible || viewmodel.isUrlEmpty) ? (viewmodel.isPrivateSession ? @drawable/url_button_end_private : @drawable/url_button_end) : (viewmodel.isPrivateSession ? @drawable/url_button_private : @drawable/url_button)}"
+                    android:src="@drawable/ic_web_app_registration"
+                    android:tint="@color/fog"
+                    android:tooltipText="@string/hamburger_menu_save_web_app"
+                    app:privateMode="@{viewmodel.isPrivateSession}"
+                    app:visibleGone="@{viewmodel.isWebApp &amp;&amp; !(viewmodel.isNativeContentVisible || viewmodel.isUrlEmpty) &amp;&amp; !viewmodel.isFocused}" />
 
                 <com.igalia.wolvic.ui.views.UIButton
                     android:id="@+id/bookmarkButton"
@@ -240,7 +254,7 @@
                     android:tint="@color/fog"
                     android:tooltipText="@{viewmodel.isBookmarked ? @string/remove_bookmark_tooltip : @string/bookmark_tooltip}"
                     app:privateMode="@{viewmodel.isPrivateSession}"
-                    app:visibleGone="@{!(viewmodel.isLibraryVisible || viewmodel.isUrlEmpty) &amp;&amp; !viewmodel.isFocused}"
+                    app:visibleGone="@{!(viewmodel.isNativeContentVisible || viewmodel.isUrlEmpty) &amp;&amp; !viewmodel.isFocused}"
                     tools:src="@drawable/ic_icon_bookmarked" />
 
                 <com.igalia.wolvic.ui.views.UIButton

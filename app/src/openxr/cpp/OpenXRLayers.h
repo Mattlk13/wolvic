@@ -14,7 +14,9 @@
 #include <openxr/openxr_platform.h>
 #include "OpenXRSwapChain.h"
 #include "OpenXRHelpers.h"
+#include "OpenXRExtensions.h"
 #include <array>
+#include "SystemUtils.h"
 
 
 namespace crow {
@@ -35,7 +37,7 @@ typedef std::weak_ptr<SurfaceChangedTarget> SurfaceChangedTargetWeakPtr;
 class OpenXRLayer {
 public:
   virtual void Init(JNIEnv *aEnv, XrSession session, vrb::RenderContextPtr &aContext) = 0;
-  virtual void Update(XrSpace aSpace, const XrPosef &aPose, XrSwapchain aClearSwapChain) = 0;
+  virtual void Update(XrSpace aSpace, const XrPosef &aReorientPose, XrSwapchain aClearSwapChain) = 0;
   virtual OpenXRSwapChainPtr GetSwapChain() const = 0;
   virtual uint32_t HeaderCount() const = 0;
   virtual const XrCompositionLayerBaseHeader* Header(uint32_t aIndex) const = 0;
@@ -79,11 +81,24 @@ public:
   }
 
   virtual void
-  Update(XrSpace aSpace, const XrPosef &aPose, XrSwapchain aClearSwapChain) override {
-    for (int i = 0; i < xrLayers.size(); ++i) {
-      xrLayers[i].layerFlags = XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT;
-      xrLayers[i].eyeVisibility = XR_EYE_VISIBILITY_BOTH;
-      xrLayers[i].space = aSpace;
+  Update(XrSpace aSpace, const XrPosef &aReorientPose, XrSwapchain aClearSwapChain) override {
+    const uint numXRLayers = GetNumXRLayers();
+    if (mCompositionLayerColorScaleBias != XR_NULL_HANDLE) {
+        vrb::Color tintColor = layer->GetTintColor();
+        if (!IsComposited() && (layer->GetClearColor().Alpha() > 0.0f)) {
+            tintColor = layer->GetClearColor();
+            tintColor.SetRGBA(tintColor.Red(), tintColor.Green(), tintColor.Blue(), tintColor.Alpha());
+        }
+        mCompositionLayerColorScaleBiasStruct.colorScale = {tintColor.Red(), tintColor.Green(), tintColor.Blue(), tintColor.Alpha()};
+    }
+
+    for (auto& xrLayer : xrLayers) {
+      xrLayer.layerFlags = XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT;
+      xrLayer.space = aSpace;
+      xrLayer.next = XR_NULL_HANDLE;
+
+      if (mCompositionLayerColorScaleBias != XR_NULL_HANDLE)
+        PushNextXrStructureInChain((XrBaseInStructure&)xrLayer, (XrBaseInStructure&)*mCompositionLayerColorScaleBias);
     }
   }
 
@@ -91,13 +106,12 @@ public:
     return swapchain;
   }
 
+  // This method was based on the eyeVisibility attribute that most XrCompositionLayers have. However
+  // that is not the case for all of them (like XrCompositionLayerPassthroughFB). We can only assume
+  // here that we have a XrCompositionLayerBaseHeader. That's why we use GetNumXRLayers() now as
+  // it does not depend on OpenXR structures but our own data.
   uint32_t HeaderCount() const override {
-    // The first layer is used for both eyes by default.
-    // Layers can override this behavior to support different settings per eye.
-    if (xrLayers[0].eyeVisibility == XR_EYE_VISIBILITY_BOTH) {
-      return 1;
-    }
-    return 2;
+    return GetNumXRLayers();
   }
 
   const XrCompositionLayerBaseHeader* Header(uint32_t aIndex) const override {
@@ -170,7 +184,16 @@ protected:
     XrSwapchainCreateInfo info{XR_TYPE_SWAPCHAIN_CREATE_INFO};
     info.width = width;
     info.height = height;
-    if (aSurfaceType == VRLayerSurface::SurfaceType::AndroidSurface) {
+    bool shouldZeroInitialize = aSurfaceType == VRLayerSurface::SurfaceType::AndroidSurface;
+#if defined(PICOXR)
+    // Circumvent a bug in the pico OpenXR runtime in versions below 5.4.0.
+    char buildId[128] = {0};
+    if (CompareSemanticVersionStrings(GetBuildIdString(buildId), "5.4.0")) {
+      // System version is < 5.4.0
+      shouldZeroInitialize = false;
+    }
+#endif
+    if (shouldZeroInitialize) {
       // These members must be zero
       // See https://www.khronos.org/registry/OpenXR/specs/1.0/man/html/xrCreateSwapchainAndroidSurfaceKHR.html#XR_KHR_android_surface_swapchain
       info.format = 0;
@@ -190,6 +213,37 @@ protected:
 
     return info;
   }
+
+  uint GetNumXRLayers() const {
+    return layer->GetUseSameLayerForBothEyes() ? 1 : xrLayers.size();
+  }
+
+  XrEyeVisibility GetEyeVisibility(int32_t eyeIndex) {
+    if (GetNumXRLayers() == 1)
+      return XR_EYE_VISIBILITY_BOTH;
+    return eyeIndex == 0 ? XR_EYE_VISIBILITY_LEFT : XR_EYE_VISIBILITY_RIGHT;
+  };
+
+  void PushNextXrStructureInChain(XrBaseInStructure& baseInStructure, XrBaseInStructure& newBaseInStructure) {
+    newBaseInStructure.next = baseInStructure.next;
+    baseInStructure.next = &newBaseInStructure;
+  }
+
+  XrCompositionLayerColorScaleBiasKHR mCompositionLayerColorScaleBiasStruct {
+    .type = XR_TYPE_COMPOSITION_LAYER_COLOR_SCALE_BIAS_KHR,
+    .next = XR_NULL_HANDLE,
+  };
+  XrBaseInStructure* mCompositionLayerColorScaleBias { OpenXRExtensions::IsExtensionSupported(XR_KHR_COMPOSITION_LAYER_COLOR_SCALE_BIAS_EXTENSION_NAME) ? (XrBaseInStructure*)&mCompositionLayerColorScaleBiasStruct : XR_NULL_HANDLE };
+
+#if OCULUSVR \
+  // Oculus OpenXR backend flips layers vertically.
+  XrCompositionLayerImageLayoutFB mLayerImageLayoutStruct {
+    .type = XR_TYPE_COMPOSITION_LAYER_IMAGE_LAYOUT_FB,
+    .next = XR_NULL_HANDLE,
+    .flags = XR_COMPOSITION_LAYER_IMAGE_LAYOUT_VERTICAL_FLIP_BIT_FB
+  };
+  XrBaseInStructure* mLayerImageLayout { OpenXRExtensions::IsExtensionSupported(XR_FB_COMPOSITION_LAYER_IMAGE_LAYOUT_EXTENSION_NAME) ? (XrBaseInStructure*)&mLayerImageLayoutStruct : XR_NULL_HANDLE };
+#endif
 };
 
 
@@ -210,6 +264,19 @@ public:
       Resize();
     });
     OpenXRLayerBase<T, U>::Init(aEnv, session, aContext);
+  }
+
+  virtual void
+  Update(XrSpace aSpace, const XrPosef &aReorientPose, XrSwapchain aClearSwapChain) override {
+    OpenXRLayerBase<T , U>::Update(aSpace, aReorientPose, aClearSwapChain);
+#ifdef OCULUSVR
+    if (this->mLayerImageLayout != XR_NULL_HANDLE) {
+      const uint numXRLayers = this->GetNumXRLayers();
+      for (uint i = 0; i < numXRLayers; ++i) {
+        this->PushNextXrStructureInChain((XrBaseInStructure&)this->xrLayers[i], (XrBaseInStructure&)*this->mLayerImageLayout);
+      }
+    }
+#endif
   }
 
   void Resize() {
@@ -294,7 +361,7 @@ public:
   static OpenXRLayerQuadPtr
   Create(JNIEnv *aEnv, const VRLayerQuadPtr &aLayer, const OpenXRLayerPtr &aSource = nullptr);
   void Init(JNIEnv *aEnv, XrSession session, vrb::RenderContextPtr &aContext) override;
-  void Update(XrSpace aSpace, const XrPosef &aPose, XrSwapchain aClearSwapChain) override;
+  void Update(XrSpace aSpace, const XrPosef &aReorientPose, XrSwapchain aClearSwapChain) override;
 };
 
 
@@ -307,7 +374,7 @@ public:
   static OpenXRLayerCylinderPtr
   Create(JNIEnv *aEnv, const VRLayerCylinderPtr &aLayer, const OpenXRLayerPtr &aSource = nullptr);
   void Init(JNIEnv *aEnv, XrSession session, vrb::RenderContextPtr &aContext) override;
-  void Update(XrSpace aSpace, const XrPosef &aPose, XrSwapchain aClearSwapChain) override;
+  void Update(XrSpace aSpace, const XrPosef &aReorientPose, XrSwapchain aClearSwapChain) override;
 };
 
 
@@ -319,7 +386,7 @@ class OpenXRLayerCube : public OpenXRLayerBase<VRLayerCubePtr, XrCompositionLaye
 public:
   static OpenXRLayerCubePtr Create(const VRLayerCubePtr &aLayer, GLint aInternalFormat);
   void Init(JNIEnv *aEnv, XrSession session, vrb::RenderContextPtr &aContext) override;
-  void Update(XrSpace aSpace, const XrPosef &aPose, XrSwapchain aClearSwapChain) override;
+  void Update(XrSpace aSpace, const XrPosef &aReorientPose, XrSwapchain aClearSwapChain) override;
   void Destroy() override;
   bool IsLoaded() const;
 
@@ -338,9 +405,28 @@ public:
   static OpenXRLayerEquirectPtr
   Create(const VRLayerEquirectPtr &aLayer, const OpenXRLayerPtr &aSourceLayer);
   void Init(JNIEnv *aEnv, XrSession session, vrb::RenderContextPtr &aContext) override;
-  void Update(XrSpace aSpace, const XrPosef &aPose, XrSwapchain aClearSwapChain) override;
+  void Update(XrSpace aSpace, const XrPosef &aReorientPose, XrSwapchain aClearSwapChain) override;
   void Destroy() override;
   bool IsDrawRequested() const override;
+};
+
+
+class OpenXRLayerPassthrough;
+typedef std::shared_ptr<OpenXRLayerPassthrough> OpenXRLayerPassthroughPtr;
+
+class OpenXRLayerPassthrough {
+  public:
+    XrCompositionLayerPassthroughFB xrCompositionLayer;
+
+    static OpenXRLayerPassthroughPtr Create(XrPassthroughFB);
+    void Init(XrSession session);
+    bool IsValid() const { return mPassthroughLayerHandle != XR_NULL_HANDLE; }
+    XrPassthroughLayerFB GetPassthroughLayerHandle() const { return mPassthroughLayerHandle; }
+    ~OpenXRLayerPassthrough();
+
+private:
+    XrPassthroughFB mPassthroughInstance;
+    XrPassthroughLayerFB mPassthroughLayerHandle;
 };
 
 }

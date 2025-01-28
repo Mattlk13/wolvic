@@ -14,6 +14,7 @@ import com.igalia.wolvic.browser.Media;
 import com.igalia.wolvic.browser.api.WDisplay;
 import com.igalia.wolvic.browser.api.WSession;
 import com.igalia.wolvic.browser.api.WSessionState;
+import com.igalia.wolvic.ui.adapters.WebApp;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -48,11 +49,12 @@ public class SessionState {
     public String mUri = "";
     public String mPreviousUri;
     public String mTitle = "";
+    public transient WebApp mWebAppManifest;
     public transient boolean mFullScreen;
+    public transient boolean mInKioskMode;
     public transient WSession mSession;
     public transient WDisplay mDisplay;
     public SessionSettings mSettings;
-    public transient ArrayList<Media> mMediaElements = new ArrayList<>();
     public transient @WebXRState int mWebXRState = WEBXR_UNUSED;
     public transient @PopupState int mPopUpState = POPUP_UNUSED;
     public transient @DrmState int mDrmState = DRM_UNUSED;
@@ -89,7 +91,7 @@ public class SessionState {
         @Override
         public WSessionState read(JsonReader in) {
             try {
-                String session = new JsonParser().parse(in).toString();
+                String session = JsonParser.parseReader(in).getAsString();
                 return WSessionState.fromJson(session);
 
             } catch (Exception e) {

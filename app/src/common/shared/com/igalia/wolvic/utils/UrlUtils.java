@@ -6,8 +6,8 @@
 package com.igalia.wolvic.utils;
 
 import android.content.Context;
-import android.net.Uri;
 import android.util.Base64;
+import android.webkit.MimeTypeMap;
 import android.webkit.URLUtil;
 
 import androidx.annotation.NonNull;
@@ -15,6 +15,7 @@ import androidx.annotation.Nullable;
 
 import com.igalia.wolvic.R;
 import com.igalia.wolvic.browser.SettingsStore;
+import com.igalia.wolvic.browser.api.WSession;
 import com.igalia.wolvic.search.SearchEngineWrapper;
 import com.igalia.wolvic.telemetry.TelemetryService;
 
@@ -23,14 +24,15 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.List;
 import java.util.regex.Pattern;
 
 // This class refers from mozilla-mobile/focus-android
 public class UrlUtils {
 
-    private static List<String> ENGINE_SUPPORTED_SCHEMES = Arrays.asList(null, "about", "data", "file", "ftp", "http", "https", "moz-extension", "moz-safe-about", "resource", "view-source", "ws", "wss", "blob");
+    public static String UNKNOWN_MIME_TYPE = "application/octet-stream";
+    public static String EXTENSION_MIME_TYPE = "application/x-xpinstall";
+    public static boolean isUnderTest = false;
+    public static String TEST_SEARCH_URL = "http://testsearchengine.com/search?q=";
 
     public static String stripCommonSubdomains(@Nullable String host) {
         if (host == null) {
@@ -76,7 +78,7 @@ public class UrlUtils {
         return result;
     }
 
-    private static Pattern domainPattern = Pattern.compile("^(http:\\/\\/www\\.|https:\\/\\/www\\.|http:\\/\\/|https:\\/\\/)?[a-zA-Z0-9]+([\\-\\.]{1}[a-zA-Z0-9]+)*\\.[a-zA-Z]{2,5}(:[0-9]{1,5})?(\\/[^ ]*)?$");
+    private static Pattern domainPattern = Pattern.compile("^(http:\\/\\/www\\.|https:\\/\\/www\\.|http:\\/\\/|https:\\/\\/)?[a-zA-Z0-9]+([\\-\\.]{1}[a-zA-Z0-9]+)*\\.[a-zA-Z]{2,24}(:[0-9]{1,5})?(\\/[^ ]*)?$");
     public static boolean isDomain(String text) {
         return domainPattern.matcher(text).find();
     }
@@ -91,6 +93,8 @@ public class UrlUtils {
         return localhostPattern.matcher(uri).find() || ipPattern.matcher(uri).find();
     }
 
+    private static String privateAboutPageBytes;
+
     public static boolean isLocalIP(@Nullable String aUri) {
         if (!isIPUri(aUri)) {
             return false;
@@ -103,9 +107,14 @@ public class UrlUtils {
     }
 
     public static boolean isPrivateAboutPage(@Nullable Context context,  @Nullable String uri) {
+        if (uri == null || !isDataUri(uri))
+            return false;
+
         InternalPages.PageResources pageResources = InternalPages.PageResources.create(R.raw.private_mode, R.raw.private_style);
-        byte[] privatePageBytes = InternalPages.createAboutPage(context, pageResources);
-        return uri != null && uri.equals("data:text/html;base64," + Base64.encodeToString(privatePageBytes, Base64.NO_WRAP));
+        if (privateAboutPageBytes == null)
+            privateAboutPageBytes = "data:text/html;base64," + Base64.encodeToString(InternalPages.createAboutPage(context, pageResources), Base64.NO_WRAP);
+
+        return uri.equals(privateAboutPageBytes);
     }
 
     public static Boolean isHomeUri(@Nullable Context context, @Nullable String aUri) {
@@ -123,11 +132,19 @@ public class UrlUtils {
     }
 
     public static Boolean isBlobUri(@Nullable String aUri) {
-        return aUri != null && aUri.startsWith("blob");
+        return aUri != null && aUri.startsWith("blob:");
     }
 
     public static Boolean isBlankUri(@Nullable Context context, @Nullable String aUri) {
         return context != null && aUri != null && aUri.equals(context.getString(R.string.about_blank));
+    }
+
+    public static @NonNull String getMimeTypeFromUrl(String url) {
+        String extension = MimeTypeMap.getFileExtensionFromUrl(url);
+        if (StringUtils.isEmpty(extension))
+            return UNKNOWN_MIME_TYPE;
+        String mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
+        return StringUtils.isEmpty(mimeType) ? UNKNOWN_MIME_TYPE : mimeType;
     }
 
     public static String titleBarUrl(@Nullable String aUri) {
@@ -191,6 +208,26 @@ public class UrlUtils {
         return url.equalsIgnoreCase(ABOUT_ADDONS);
     }
 
+    public static final String ABOUT_WEBAPPS = "about://webapps";
+
+    public static boolean isWebAppsUrl(@Nullable String url) {
+        if (url == null) {
+            return false;
+        }
+
+        return url.equalsIgnoreCase(ABOUT_WEBAPPS);
+    }
+
+    public static final String ABOUT_NOTIFICATIONS = "about://notifications";
+
+    public static boolean isNotificationsUrl(@Nullable String url) {
+        if (url == null) {
+            return false;
+        }
+
+        return url.equalsIgnoreCase(ABOUT_NOTIFICATIONS);
+    }
+
     public static final String WEB_EXTENSION_URL = "moz-extension://";
 
     public static boolean isWebExtensionUrl(@Nullable String url) {
@@ -208,11 +245,12 @@ public class UrlUtils {
     }
 
     public static boolean isAboutPage(@Nullable String url) {
-        return isHistoryUrl(url) || isBookmarksUrl(url) || isDownloadsUrl(url) || isAddonsUrl(url) || isPrivateUrl(url);
+        return isHistoryUrl(url) || isBookmarksUrl(url) || isDownloadsUrl(url) || isAddonsUrl(url) ||
+                isWebAppsUrl(url) || isNotificationsUrl(url) || isPrivateUrl(url);
     }
 
     public static boolean isContentFeed(Context aContext, @Nullable String url) {
-        String feed = aContext.getString(R.string.homepage_url);
+        String feed = aContext.getString(R.string.HOMEPAGE_URL);
         return UrlUtils.getHost(feed).equalsIgnoreCase(UrlUtils.getHost(url));
     }
 
@@ -240,25 +278,39 @@ public class UrlUtils {
         }
     }
 
-    public static String urlForText(@NonNull Context context, @NonNull String text) {
-        String url = text.trim();
-        if ((UrlUtils.isDomain(text) || UrlUtils.isIPUri(text)) && !text.contains(" ")) {
-            url = text;
-            TelemetryService.urlBarEvent(true);
-        } else if (text.startsWith("about:") || text.startsWith("resource://")) {
-            url = text;
-        } else {
-            url = SearchEngineWrapper.get(context).getSearchURL(text);
+    private static String searchURLForText(@NonNull Context context, @NonNull String text) {
+        return !isUnderTest ? SearchEngineWrapper.get(context).getSearchURL(text) : TEST_SEARCH_URL + text;
+    }
 
-            // Doing search in the URL bar, so sending "aIsURL: false" to telemetry.
-            TelemetryService.urlBarEvent(false);
+    public static String urlForText(@NonNull Context context, @NonNull String text, @NonNull WSession.UrlUtilsVisitor visitor) {
+        String url = text.trim();
+        URI uri;
+        try {
+            uri = parseUri(url);
+            if (!uri.isAbsolute()) {
+                if (!isDomain(url) && !isIPUri(url))
+                    return searchURLForText(context, url);
+                uri = parseUri("http://" + url);
+            }
+            // This catches the special case of passing an URL with an invalid IP address
+            if (uri.getHost() == null && uri.getAuthority() != null)
+                return searchURLForText(context, url);
+        } catch (URISyntaxException e) {
+            return searchURLForText(context, url);
         }
 
-        return url;
+        if (!isEngineSupportedScheme(uri, visitor)) {
+            TelemetryService.urlBarEvent(false);
+            return searchURLForText(context, url);
+        }
+
+        TelemetryService.urlBarEvent(true);
+        return uri.toString();
     }
 
     // TODO Ideally we should use something like org.mozilla.fenix.components.AppLinksInterceptor for this
-    public static boolean isEngineSupportedScheme(@NonNull String url) {
-        return ENGINE_SUPPORTED_SCHEMES.contains(Uri.parse(url).getScheme());
+    public static boolean isEngineSupportedScheme(@NonNull URI uri, @NonNull WSession.UrlUtilsVisitor visitor) {
+        String scheme = uri.getScheme();
+        return scheme != null && visitor.isSupportedScheme(scheme);
     }
 }

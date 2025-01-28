@@ -2,6 +2,7 @@ package com.igalia.wolvic.browser;
 
 import android.app.Application;
 import android.content.Context;
+import android.net.Uri;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -26,7 +27,10 @@ import com.igalia.wolvic.ui.widgets.WindowWidget;
 import com.igalia.wolvic.ui.widgets.prompts.AlertPromptWidget;
 import com.igalia.wolvic.ui.widgets.prompts.AuthPromptWidget;
 import com.igalia.wolvic.ui.widgets.prompts.ChoicePromptWidget;
+import com.igalia.wolvic.ui.widgets.prompts.ColorPromptWidget;
 import com.igalia.wolvic.ui.widgets.prompts.ConfirmPromptWidget;
+import com.igalia.wolvic.ui.widgets.prompts.DateTimePromptWidget;
+import com.igalia.wolvic.ui.widgets.prompts.FilePromptWidget;
 import com.igalia.wolvic.ui.widgets.prompts.PromptWidget;
 import com.igalia.wolvic.ui.widgets.prompts.SaveLoginPromptWidget;
 import com.igalia.wolvic.ui.widgets.prompts.SelectLoginPromptWidget;
@@ -115,6 +119,36 @@ public class PromptDelegate implements
         aSession.setPromptDelegate(null);
         aSession.removeNavigationListener(this);
         aSession.removeContentListener(this);
+    }
+
+    @Nullable
+    @Override
+    public WResult<PromptResponse> onFilePrompt(@NonNull final WSession session, @NonNull final WSession.PromptDelegate.FilePrompt prompt) {
+        final WResult<PromptResponse> result = WResult.create();
+
+        FilePromptWidget filePromptWidget = new FilePromptWidget(mContext);
+        filePromptWidget.setIsMultipleSelection(prompt.type() == FilePrompt.Type.MULTIPLE);
+        filePromptWidget.setMimeTypes(prompt.mimeTypes());
+        mPrompt = filePromptWidget;
+        mPrompt.setTitle(prompt.title());
+        mPrompt.setPromptDelegate(new FilePromptWidget.FilePromptDelegate() {
+            @Override
+            public void confirm(@NonNull Uri[] uris) {
+                result.complete(prompt.confirm(mContext, uris));
+            }
+
+            @Override
+            public void dismiss() {
+                result.complete(prompt.dismiss());
+            }
+        });
+
+        mPrompt.getPlacement().parentHandle = mAttachedWindow.getHandle();
+        mPrompt.getPlacement().parentAnchorY = 0.0f;
+        mPrompt.getPlacement().translationY = WidgetPlacement.unitFromMeters(mContext, R.dimen.js_prompt_y_distance);
+        mPrompt.show(UIWidget.REQUEST_FOCUS, true);
+
+        return result;
     }
 
     @Nullable
@@ -255,6 +289,56 @@ public class PromptDelegate implements
         return result;
     }
 
+    @Nullable
+    @Override
+    public WResult<PromptResponse> onColorPrompt(@NonNull WSession session, @NonNull ColorPrompt prompt) {
+        final WResult<PromptResponse> result = WResult.create();
+
+        mPrompt = new ColorPromptWidget(mContext);
+        mPrompt.getPlacement().parentHandle = mAttachedWindow.getHandle();
+        mPrompt.getPlacement().parentAnchorY = 0.0f;
+        mPrompt.getPlacement().translationY = WidgetPlacement.unitFromMeters(mContext, R.dimen.js_prompt_y_distance);
+        mPrompt.setTitle(prompt.title());
+        mPrompt.setPromptDelegate(new ColorPromptWidget.ColorPromptDelegate() {
+            @Override
+            public void confirm(@NonNull final String color) {
+                result.complete(prompt.confirm(color));
+            }
+
+            @Override
+            public void dismiss() {
+                result.complete(prompt.dismiss());
+            }
+        });
+        mPrompt.show(UIWidget.REQUEST_FOCUS, true);
+
+        return result;
+    }
+
+    @Nullable
+    @Override
+    public WResult<PromptResponse> onDateTimePrompt(@NonNull WSession session, @NonNull DateTimePrompt prompt) {
+        final WResult<PromptResponse> result = WResult.create();
+
+        mPrompt = new DateTimePromptWidget(mContext, prompt);
+        mPrompt.getPlacement().parentHandle = mAttachedWindow.getHandle();
+        mPrompt.getPlacement().parentAnchorY = 0.0f;
+        mPrompt.getPlacement().translationY = WidgetPlacement.unitFromMeters(mContext, R.dimen.js_prompt_y_distance);
+        mPrompt.setTitle(prompt.title());
+        mPrompt.setPromptDelegate(new DateTimePromptWidget.DateTimePromptDelegate() {
+            @Override
+            public void confirm(@NonNull final String dateTime) {
+                result.complete(prompt.confirm(dateTime));
+            }
+            @Override
+            public void dismiss() {
+                result.complete(prompt.dismiss());
+            }
+        });
+        mPrompt.show(UIWidget.REQUEST_FOCUS, true);
+        return result;
+    }
+
     private Observer<List<SitePermission>> mPopUpSiteObserver = sites -> {
         mAllowedPopUpSites = sites;
     };
@@ -289,6 +373,15 @@ public class PromptDelegate implements
             }
         }
 
+        return result;
+    }
+
+    @Nullable
+    @Override
+    public WResult<PromptResponse> onSharePrompt(@NonNull WSession session, @NonNull SharePrompt prompt) {
+        // TODO implement share request
+        final WResult<PromptResponse> result = WResult.create();
+        result.cancel();
         return result;
     }
 
@@ -340,7 +433,7 @@ public class PromptDelegate implements
     public WResult<PromptResponse> onLoginSelect(@NonNull WSession session, final @NonNull AutocompleteRequest<WAutocomplete.LoginSelectOption> autocompleteRequest) {
         final WResult<PromptResponse> result = WResult.create();
 
-        if (autocompleteRequest.options().length > 1 && SettingsStore.getInstance(mContext).isAutoFillEnabled()) {
+        if (autocompleteRequest.options().length > 0 && SettingsStore.getInstance(mContext).isAutoFillEnabled()) {
             List<Login> logins = Arrays.stream(autocompleteRequest.options()).map(item -> LoginDelegateWrapper.toLogin(item.value)).collect(Collectors.toList());
             if (mSelectLoginPrompt == null) {
                 mSelectLoginPrompt = new SelectLoginPromptWidget(mContext);
@@ -426,6 +519,37 @@ public class PromptDelegate implements
         ((ConfirmPromptWidget)mPrompt).setButtons(new String[] {
                 mContext.getResources().getText(R.string.before_unload_prompt_leave).toString(),
                 mContext.getResources().getText(R.string.before_unload_prompt_stay).toString()
+        });
+        mPrompt.setPromptDelegate(new ConfirmPromptWidget.ConfirmPromptDelegate() {
+            @Override
+            public void confirm(int index) {
+                result.complete(prompt.confirm(index == 0 ? WAllowOrDeny.ALLOW : WAllowOrDeny.DENY));
+            }
+
+            @Override
+            public void dismiss() {
+                result.complete(prompt.dismiss());
+            }
+        });
+        mPrompt.show(UIWidget.REQUEST_FOCUS, true);
+
+        return result;
+    }
+
+    @Nullable
+    @Override
+    public WResult<PromptResponse> onRepostConfirmPrompt(@NonNull WSession session, @NonNull RepostConfirmPrompt prompt) {
+        final WResult<PromptResponse> result = WResult.create();
+
+        mPrompt = new ConfirmPromptWidget(mContext);
+        mPrompt.getPlacement().parentHandle = mAttachedWindow.getHandle();
+        mPrompt.getPlacement().parentAnchorY = 0.0f;
+        mPrompt.getPlacement().translationY = WidgetPlacement.unitFromMeters(mContext, R.dimen.js_prompt_y_distance);
+        mPrompt.setTitle(mContext.getString(R.string.repost_confirm_title));
+        mPrompt.setMessage(mContext.getString(R.string.repost_confirm_message));
+        ((ConfirmPromptWidget)mPrompt).setButtons(new String[] {
+                mContext.getResources().getText(R.string.repost_confirm_continue).toString(),
+                mContext.getResources().getText(R.string.cancel_button).toString()
         });
         mPrompt.setPromptDelegate(new ConfirmPromptWidget.ConfirmPromptDelegate() {
             @Override
