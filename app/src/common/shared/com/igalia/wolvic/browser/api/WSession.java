@@ -19,7 +19,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringDef;
 import androidx.annotation.UiThread;
 
-import org.json.JSONObject;
+import com.igalia.wolvic.ui.adapters.WebApp;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -285,13 +285,14 @@ public interface WSession {
          * <p>The various colors (theme_color, background_color, etc.) present in the manifest have been
          * transformed into #AARRGGBB format.
          *
-         * @param session The ISession that contains the Web App Manifest
-         * @param manifest A parsed and validated {@link JSONObject} containing the manifest contents.
+         * @param session  The ISession that contains the Web App Manifest
+         * @param manifest A parsed and validated {@link WebApp} representing the manifest contents.
          * @see <a href="https://www.w3.org/TR/appmanifest/">Web App Manifest specification</a>
          */
         @UiThread
         default void onWebAppManifest(
-                @NonNull final WSession session, @NonNull final JSONObject manifest) {}
+                @NonNull final WSession session, @NonNull final WebApp manifest) {
+        }
 
         /**
          * A script has exceeded its execution timeout value
@@ -464,6 +465,9 @@ public interface WSession {
             return null;
         }
 
+        public interface OnNewSessionCallback {
+            void onNewSession(WSession session);
+        }
         /**
          * A request has been made to open a new session. The URI is provided only for informational
          * purposes. Do not call ISession.load here. Additionally, the returned ISession must be
@@ -471,6 +475,8 @@ public interface WSession {
          *
          * @param session The ISession that initiated the callback.
          * @param uri The URI to be loaded.
+         * @param callback A callback with extra work that will be performed after creating the
+         *                 session but before notifying the observers/clients.
          * @return A {@link WResult} which holds the returned ISession. May be null, in which
          *     case the request for a new window by web content will fail. e.g., <code>window.open()
          *     </code> will return null. The implementation of onNewSession is responsible for
@@ -480,7 +486,7 @@ public interface WSession {
         @UiThread
         default @Nullable
         WResult<WSession> onNewSession(
-                @NonNull final WSession session, @NonNull final String uri) {
+                @NonNull final WSession session, @NonNull final String uri, OnNewSessionCallback callback) {
             return null;
         }
 
@@ -2030,9 +2036,6 @@ public interface WSession {
             /** A string giving the origin-specific source identifier. */
             public final @NonNull String id;
 
-            /** A string giving the non-origin-specific source identifier. */
-            public final @NonNull String rawId;
-
             /**
              * A string giving the name of the video source from the system (for example, "Camera 0,
              * Facing back, Orientation 90"). May be empty.
@@ -2049,9 +2052,8 @@ public interface WSession {
             /** An int giving the type of media, must be either TYPE_VIDEO or TYPE_AUDIO. */
             public final @Type int type;
 
-            public MediaSource(@NonNull String id, @NonNull String rawId, @Nullable String name, @Source int source, @Type int type) {
+            public MediaSource(@NonNull String id, @Nullable String name, @Source int source, @Type int type) {
                 this.id = id;
-                this.rawId = rawId;
                 this.name = name;
                 this.source = source;
                 this.type = type;
@@ -2060,7 +2062,6 @@ public interface WSession {
             /** Empty constructor for tests. */
             protected MediaSource() {
                 id = null;
-                rawId = null;
                 name = null;
                 source = SOURCE_CAMERA;
                 type = TYPE_VIDEO;
@@ -2573,10 +2574,101 @@ public interface WSession {
     @NonNull
     WSessionSettings getSettings();
 
+    /**
+     * Get the default user-agent for the given mode.
+     *
+     * @param mode {@link WSessionSettings#USER_AGENT_MODE_MOBILE},
+     *             {@link WSessionSettings#USER_AGENT_MODE_DESKTOP},
+     *             or {@link WSessionSettings#USER_AGENT_MODE_VR}.
+     */
+    @AnyThread
+    @NonNull
+    String getDefaultUserAgent(final int mode);
+
+    @AnyThread
+    @NonNull
+    WSession.SessionFinder getSessionFinder();
 
     /** Exits fullscreen mode */
     @AnyThread
     void exitFullScreen();
+
+    interface SessionFinder {
+        @Retention(RetentionPolicy.SOURCE)
+        @IntDef(
+                flag = true,
+                value = {
+                        FINDER_FIND_BACKWARDS,
+                        FINDER_FIND_LINKS_ONLY,
+                        FINDER_FIND_MATCH_CASE,
+                        FINDER_FIND_WHOLE_WORD
+                })
+        public @interface FinderFindFlags {}
+
+        /** Go backwards when finding the next match. */
+        public static final int FINDER_FIND_BACKWARDS = 1;
+        /** Perform case-sensitive match; default is to perform a case-insensitive match. */
+        public static final int FINDER_FIND_MATCH_CASE = 1 << 1;
+        /** Must match entire words; default is to allow matching partial words. */
+        public static final int FINDER_FIND_WHOLE_WORD = 1 << 2;
+        /** Limit matches to links on the page. */
+        public static final int FINDER_FIND_LINKS_ONLY = 1 << 3;
+
+        public class FinderResult {
+            /** Whether a match was found. */
+            public boolean found;
+            /** Whether the search wrapped around the top or bottom of the page. */
+            public boolean wrapped;
+            /** Ordinal number of the current match starting from 1, or 0 if no match. */
+            public int current;
+            /** Total number of matches found so far, or -1 if unknown. */
+            public int total;
+            /** Search string. */
+            @NonNull
+            public String searchString;
+            /**
+             * Flags used for the search; either 0 or a combination of FINDER_FIND_* flags.
+             */
+            public int flags;
+            /** URI of the link, if the current match is a link, or null otherwise. */
+            @Nullable
+            public String linkUri;
+            /** Bounds of the current match in client coordinates, or null if unknown. */
+            @Nullable public RectF clientRect;
+        }
+
+        /**
+         * Find and select a string on the current page, starting from the current selection or the
+         * start of the page if there is no selection. Optionally return results related to the
+         * search. If searchString is null, search is performed using the previous search string.
+         *
+         * @param searchString String to search, or null to find again using the previous string.
+         * @param flags Flags for performing the search;
+         *              either 0 or a combination of FINDER_FIND_* constants.
+         * @return WResult<?> instance, Result of the search operation.
+         */
+        @AnyThread
+        @NonNull
+        WResult<FinderResult> find(@Nullable String searchString, int flags);
+
+        /** Clear any highlighted find-in-page matches. */
+        @AnyThread
+        void clear();
+
+        /** Return flags for displaying find-in-page matches.
+         *
+         * @return Display flags as a combination of FINDER_DISPLAY_* constants.
+         */
+        @AnyThread
+        int getDisplayFlags();
+
+        /** Set flags for displaying find-in-page matches.
+         *
+         * @param flags Display flags as a combination of FINDER_DISPLAY_* constants.
+         */
+        @AnyThread
+        void setDisplayFlags(int flags);
+    }
 
     /**
      * Acquire the WDisplay instance for providing the session with a drawing Surface. Be sure to
@@ -2634,7 +2726,19 @@ public interface WSession {
     @UiThread
     void getClientToScreenMatrix(@NonNull final Matrix matrix);
 
+    interface UrlUtilsVisitor {
+        @AnyThread
+        boolean isSupportedScheme(@NonNull String scheme);
+    }
 
+    /**
+     * Get the URL utils visitor for this session.
+     *
+     * @return UrlUtilsVisitor instance.
+     */
+    @AnyThread
+    @NonNull
+    UrlUtilsVisitor getUrlUtilsVisitor();
 
     /**
      * Get a matrix for transforming from page coordinates to screen coordinates. The page coordinates
@@ -2676,6 +2780,15 @@ public interface WSession {
     @NonNull
     WTextInput getTextInput();
 
+
+    @AnyThread
+    void pageZoomIn();
+
+    @AnyThread
+    void pageZoomOut();
+
+    @AnyThread
+    int getCurrentZoomLevel();
 
     /**
      * Get the PanZoomController instance for this session.

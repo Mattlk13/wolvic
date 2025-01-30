@@ -30,6 +30,7 @@ struct VRLayer::State {
   std::function<void()> pendingEvent;
   std::string name;
   bool composited;
+  bool useSameLayerForBothEyes;
   State():
       initialized(false),
       priority(0),
@@ -39,7 +40,8 @@ struct VRLayer::State {
       composited(false),
       currentEye(device::Eye::Left),
       clearColor(0),
-      tintColor(1.0f, 1.0f, 1.0f, 1.0f)
+      tintColor(1.0f, 1.0f, 1.0f, 1.0f),
+      useSameLayerForBothEyes(true)
   {
     for (int i = 0; i < 2; ++i) {
       modelTransform[i] = vrb::Matrix::Identity();
@@ -113,6 +115,10 @@ VRLayer::GetName() const {
 
 bool VRLayer::IsComposited() const {
   return m.composited;
+}
+
+bool VRLayer::GetUseSameLayerForBothEyes() const {
+  return m.useSameLayerForBothEyes;
 }
 
 bool
@@ -214,6 +220,11 @@ VRLayer::SetComposited(bool aComposited) {
   m.composited = aComposited;
 }
 
+void
+VRLayer::SetUseSameLayerForBothEyes(bool aUseSame) {
+  m.useSameLayerForBothEyes = aUseSame;
+}
+
 void VRLayer::NotifySurfaceChanged(SurfaceChange aChange, const std::function<void()>& aFirstCompositeCallback) {
   if (m.surfaceChangedDelegate) {
     m.surfaceChangedDelegate(*this, aChange, aFirstCompositeCallback);
@@ -301,8 +312,8 @@ VRLayerSurface::SetWorldSize(const float aWidth, const float aHeight) {
 }
 
 void
-VRLayerSurface::Resize(const int32_t aWidth, const int32_t aHeight) {
-  if (m.width == aWidth && m.height == aHeight) {
+VRLayerSurface::Resize(const int32_t aWidth, const int32_t aHeight, bool force) {
+  if (m.width == aWidth && m.height == aHeight && !force) {
     return;
   }
   m.width = aWidth;
@@ -335,7 +346,7 @@ VRLayerSurface::VRLayerSurface(State& aState, LayerType aLayerType): VRLayer(aSt
 }
 
 VRLayerSurface::~VRLayerSurface() {
-  if (m.surface) {
+  if (m.surface && VRBrowser::Env()) {
     VRBrowser::Env()->DeleteGlobalRef(m.surface);
   }
 }
@@ -366,11 +377,13 @@ VRLayerQuad::~VRLayerQuad() {}
 struct VRLayerCylinder::State: public VRLayerSurface::State {
   float radius;
   vrb::Matrix uvTransform[2];
+  vrb::Matrix rotation;
   State():
       radius(1.0f)
   {
     uvTransform[0] = vrb::Matrix::Identity();
     uvTransform[1] = vrb::Matrix::Identity();
+    rotation = vrb::Matrix::Identity();
   }
 };
 
@@ -397,6 +410,16 @@ VRLayerCylinder::GetUVTransform(device::Eye aEye) const {
 void
 VRLayerCylinder::SetUVTransform(device::Eye aEye, const vrb::Matrix& aTransform) {
   m.uvTransform[device::EyeIndex(aEye)] = aTransform;
+}
+
+void
+VRLayerCylinder::SetRotation(const vrb::Matrix& aTransform) {
+  m.rotation = aTransform;
+}
+
+vrb::Matrix&
+VRLayerCylinder::GetRotation() {
+  return m.rotation;
 }
 
 void
@@ -535,5 +558,17 @@ VRLayerEquirect::VRLayerEquirect(State& aState): VRLayer(aState, LayerType::EQUI
 
 VRLayerEquirect::~VRLayerEquirect() {}
 
+// Layer Passthrough
+
+struct VRLayerPassthrough::State: public VRLayer::State {
+  State() {}
+};
+
+VRLayerPassthrough::VRLayerPassthrough(State &aState): VRLayer(aState, LayerType::PASSTHROUGH), m(aState) {}
+
+VRLayerPassthroughPtr
+VRLayerPassthrough::Create() {
+  return std::make_shared<vrb::ConcreteClass<VRLayerPassthrough, VRLayerPassthrough::State>>();
+}
 
 } // namespace crow

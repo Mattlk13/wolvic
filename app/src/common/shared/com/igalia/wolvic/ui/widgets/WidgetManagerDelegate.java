@@ -35,14 +35,19 @@ public interface WidgetManagerDelegate {
         void onWebXRRenderStateChange(boolean aRendering);
     }
 
+    interface EyeTrackingCallback {
+        void onEyeTrackingPermissionRequest(boolean aPermissionGranted);
+    }
+
     float DEFAULT_DIM_BRIGHTNESS = 0.25f;
     float DEFAULT_NO_DIM_BRIGHTNESS = 1.0f;
 
 
-    @IntDef(value = { WIDGET_MOVE_BEHAVIOUR_GENERAL, WIDGET_MOVE_BEHAVIOUR_KEYBOARD})
+    @IntDef(value = { WIDGET_MOVE_BEHAVIOUR_GENERAL, WIDGET_MOVE_BEHAVIOUR_KEYBOARD, WIDGET_MOVE_BEHAVIOUR_WINDOW})
     public @interface WidgetMoveBehaviourFlags {}
     public static final int WIDGET_MOVE_BEHAVIOUR_GENERAL = 0;
     public static final int WIDGET_MOVE_BEHAVIOUR_KEYBOARD = 1;
+    public static final int WIDGET_MOVE_BEHAVIOUR_WINDOW = 2;
 
     @IntDef(value = { CPU_LEVEL_NORMAL, CPU_LEVEL_HIGH})
     @interface CPULevelFlags {}
@@ -60,15 +65,33 @@ public interface WidgetManagerDelegate {
     int YAW_TARGET_ALL = 0; // Targets widgets and VR videos.
     int YAW_TARGET_WIDGETS = 1; // Targets widgets only.
 
+    // Keep in sync with DeviceDelegate.h
+    @IntDef(value = { TRACKED_POINTER, TRACKED_EYE })
+    @interface PointerMode {}
+    int TRACKED_POINTER = 0;
+    int TRACKED_EYE = 1;
+
+    @IntDef(value = { NO_LOCK, HEAD_LOCK, CONTROLLER_LOCK})
+    @interface LockMode {}
+    int NO_LOCK = 0;
+    int HEAD_LOCK = 1;
+    int CONTROLLER_LOCK = 2;
+
+    enum OriginatorType {WEBSITE, APPLICATION}
+
     int newWidgetHandle();
     void addWidget(Widget aWidget);
     void updateWidget(Widget aWidget);
     void removeWidget(Widget aWidget);
+    void updateWidgetsPlacementTranslationZ();
     void updateVisibleWidgets();
-    void startWidgetResize(Widget aWidget, float maxWidth, float maxHeight, float minWidth, float minHeight);
-    void finishWidgetResize(Widget aWidget);
+    void recreateWidgetSurface(Widget aWidget);
+    void startWidgetResize(WindowWidget aWidget);
+    void finishWidgetResize(WindowWidget aWidget);
     void startWidgetMove(Widget aWidget, @WidgetMoveBehaviourFlags int aMoveBehaviour);
     void finishWidgetMove();
+    void startWindowMove();
+    void finishWindowMove();
     void addUpdateListener(@NonNull UpdateListener aUpdateListener);
     void removeUpdateListener(@NonNull UpdateListener aUpdateListener);
     void pushBackHandler(@NonNull Runnable aRunnable);
@@ -76,15 +99,23 @@ public interface WidgetManagerDelegate {
     void pushWorldBrightness(Object aKey, float aBrightness);
     void setWorldBrightness(Object aKey, float aBrightness);
     void popWorldBrightness(Object aKey);
+    void triggerHapticFeedback(int deviceID);
     void setControllersVisible(boolean visible);
-    void setWindowSize(float targetWidth, float targetHeight);
     void keyboardDismissed();
     void updateEnvironment();
     void updatePointerColor();
+    void updateKeyboardDictionary();
     void showVRVideo(int aWindowHandle, @VideoProjectionMenuWidget.VideoProjectionFlags int aVideoProjection);
     void hideVRVideo();
+    void togglePassthrough();
+    boolean isPassthroughEnabled();
+    boolean isPassthroughSupported();
+    boolean isPageZoomEnabled();
+    void setLockMode(@LockMode int lockMode);
     void recenterUIYaw(@YawTarget int target);
     void setCylinderDensity(float aDensity);
+    void setCylinderDensityForce(float aDensity);
+    void setCenterWindows(boolean isCenterWindows);
     float getCylinderDensity();
     void addFocusChangeListener(@NonNull FocusChangeListener aListener);
     void removeFocusChangeListener(@NonNull FocusChangeListener aListener);
@@ -98,11 +129,13 @@ public interface WidgetManagerDelegate {
     boolean isWebXRIntersitialHidden();
     boolean isWebXRPresenting();
     boolean isPermissionGranted(@NonNull String permission);
-    void requestPermission(String uri, @NonNull String permission, WSession.PermissionDelegate.Callback aCallback);
+    boolean isLaunchImmersive();
+    void requestPermission(String originator, @NonNull String permission, OriginatorType originatorType, WSession.PermissionDelegate.Callback aCallback);
     boolean canOpenNewWindow();
     void openNewWindow(String uri);
     void openNewTab(@NonNull String uri);
     void openNewTabForeground(@NonNull String uri);
+    void openNewPageNoInterrupt(@NonNull String uri);
     WindowWidget getFocusedWindow();
     TrayWidget getTray();
     NavigationBarWidget getNavigationBar();
@@ -111,4 +144,13 @@ public interface WidgetManagerDelegate {
     void updateLocale(@NonNull Context context);
     @NonNull
     AppServicesProvider getServicesProvider();
+    KeyboardWidget getKeyboard();
+    void setPointerMode(@PointerMode int mode);
+    void setHandTrackingEnabled(boolean value);
+    boolean isHandTrackingEnabled();
+    void checkEyeTrackingPermissions(@NonNull EyeTrackingCallback callback);
+    boolean isEyeTrackingSupported();
+    boolean isHandTrackingSupported();
+    boolean areControllersAvailable();
+
 }

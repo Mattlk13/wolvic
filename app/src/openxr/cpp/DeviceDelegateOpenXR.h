@@ -34,13 +34,16 @@ public:
   const vrb::Matrix& GetHeadTransform() const override;
   const vrb::Matrix& GetReorientTransform() const override;
   void SetReorientTransform(const vrb::Matrix& aMatrix) override;
+  void Reorient(const vrb::Matrix&, ReorientMode) override;
   void SetClearColor(const vrb::Color& aColor) override;
   void SetClipPlanes(const float aNear, const float aFar) override;
   void SetControllerDelegate(ControllerDelegatePtr& aController) override;
   void ReleaseControllerDelegate() override;
   int32_t GetControllerModelCount() const override;
   const std::string GetControllerModelName(const int32_t aModelIndex) const override;
-  void OnControllersReady(const std::function<void()>& callback) override;
+  bool IsPositionTrackingSupported() const override;
+  void OnControllersCreated(std::function<void()> callback) override;
+  void OnControllersReady(const ControllersReadyCallback& callback) override;
   void SetCPULevel(const device::CPULevel aLevel) override;
   void ProcessEvents() override;
   bool SupportsFramePrediction(FramePrediction aPrediction) const override;
@@ -55,14 +58,30 @@ public:
   VRLayerCylinderPtr CreateLayerCylinder(const VRLayerSurfacePtr& aMoveLayer) override;
   VRLayerCubePtr CreateLayerCube(int32_t aWidth, int32_t aHeight, GLint aInternalFormat) override;
   VRLayerEquirectPtr CreateLayerEquirect(const VRLayerPtr &aSource) override;
+  void CreateLayerPassthrough() override;
+  bool usesPassthroughCompositorLayer() const override;
   void DeleteLayer(const VRLayerPtr& aLayer) override;
+  int32_t GetHandTrackingJointIndex(const HandTrackingJoints aJoint) override;
+  void UpdateHandMesh(const uint32_t aControllerIndex, const std::vector<vrb::Matrix>& handJointTransforms,
+                      const vrb::GroupPtr& aRoot, const bool aEnabled, const bool leftHanded) override;
+  void DrawHandMesh(const uint32_t aControllerIndex, const vrb::Camera&) override;
+  void SetHitDistance(const float) override;
+  void SetPointerMode(const PointerMode mode) override;
+  bool IsPassthroughEnabled() const override;
+  bool PopulateTrackedKeyboardInfo(TrackedKeyboardInfo& keyboardInfo) override;
+  void SetHandTrackingEnabled(bool value) override;
+  void TogglePassthroughEnabled() override;
   // Custom methods for NativeActivity render loop based devices.
+  void BeginXRSession();
   void EnterVR(const crow::BrowserEGLContext& aEGLContext);
   void LeaveVR();
   void OnDestroy();
   bool IsInVRMode() const;
   bool ExitApp();
   bool ShouldExitRenderLoop() const;
+  void SetImmersiveBlendMode(device::BlendMode) override;
+  float GetSelectThreshold(int32_t controllerIndex) override;
+
 protected:
   struct State;
   DeviceDelegateOpenXR(State& aState);
@@ -70,6 +89,8 @@ protected:
 private:
   State& m;
   VRB_NO_DEFAULTS(DeviceDelegateOpenXR)
+  void updateEyeGaze();
+  void UpdatePassthrough();
 };
 
 } // namespace crow

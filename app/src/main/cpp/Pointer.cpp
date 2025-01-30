@@ -142,8 +142,15 @@ Pointer::Load(const DeviceDelegatePtr& aDevice) {
     layer->SetWorldSize(size, size);
     layer->SetSurfaceChangedDelegate([](const VRLayer& aLayer, VRLayer::SurfaceChange aChange, const std::function<void()>& aCallback) {
        auto& quad = static_cast<const VRLayerQuad&>(aLayer);
-       if (aChange == VRLayer::SurfaceChange::Create) {
-         VRBrowser::RenderPointerLayer(quad.GetSurface(), aCallback);
+       if (aChange == VRLayer::SurfaceChange::Create ||
+           aChange == VRLayer::SurfaceChange::Invalidate) {
+           auto pointerColor = quad.GetTintColor();
+           // @FIXME: Move this to vrb::Color::toAndroidColor() eventually.
+           int32_t color = ((int32_t) 0xFF << 24) |
+                   ((int32_t) (255.0f * pointerColor.Red()) << 16) |
+                   ((int32_t) (255.0f * pointerColor.Green()) << 8) |
+                   ((int32_t) (255.0f * pointerColor.Blue()));
+         VRBrowser::RenderPointerLayer(quad.GetSurface(), color, aCallback);
        }
     });
     vrb::CreationContextPtr create = m.context.lock();
@@ -164,16 +171,25 @@ Pointer::SetTransform(const vrb::Matrix& aTransform) {
 }
 
 void
-Pointer::SetScale(const vrb::Vector& aHitPoint, const vrb::Matrix& aHeadTransform) {
-  const float scale = (aHitPoint - aHeadTransform.MultiplyPosition(vrb::Vector(0.0f, 0.0f, 0.0f))).Magnitude();
-  m.pointerScale->SetTransform(vrb::Matrix::Identity().ScaleInPlace(vrb::Vector(scale, scale, scale)));
+Pointer::SetScale(const float scale) {
+  if (m.layer) {
+    float size = kOuterRadius *  2.0f * scale;
+    m.layer->SetWorldSize(size, size);
+  } else {
+    m.pointerScale->SetTransform(vrb::Matrix::Identity().ScaleInPlace(
+              vrb::Vector(scale, scale, 1.0)));
+  }
 }
 
 void
 Pointer::SetPointerColor(const vrb::Color& aColor) {
+  if (aColor == m.pointerColor)
+      return;
+
   m.pointerColor = aColor;
   if (m.layer) {
     m.layer->SetTintColor(aColor);
+    m.layer->NotifySurfaceChanged(VRLayer::SurfaceChange::Invalidate, NULL);
   } if (m.geometry) {
     m.geometry->GetRenderState()->SetMaterial(aColor, aColor, vrb::Color(0.0f, 0.0f, 0.0f), 0.0f);
   }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- IMPORTANT NOTE: If this file is updated anyhow, the STRs wiki must be updated accordingly:
-    https://github.com/MozillaReality/FirefoxReality/wiki/L10n -->
+    https://github.com/Igalia/wolvic/wiki/Localization -->
 
     <!-- This string is used on the virtual keyboard to label the 'Enter' key (stylized in uppercase letters as 'ENTER'). -->
     <string name="keyboard_enter_label">ENTER</string>
@@ -133,16 +133,16 @@
          opens a dialog box that contains settings that an application or Web developer might want to change. -->
     <string name="settings_developer_options">Kehittäjävalinnat</string>
 
-    <!-- This string is used in the 'Settings' window when user is not signed into a Firefox Account -->
+    <!-- This string is used in the 'Settings' window when user is not signed into a Mozilla Account -->
     <string name="settings_fxa_account_sign_in">Kirjaudu tilille</string>
 
-    <!-- This string is used in the 'Settings' window when user is signed into a Firefox Account -->
+    <!-- This string is used in the 'Settings' window when user is signed into a Mozilla Account -->
     <string name="settings_fxa_account_manage">Hallitse tiliä</string>
 
-    <!-- This string is used in the 'Account' window when user is signed into a Firefox Account -->
+    <!-- This string is used in the 'Account' window when user is signed into a Mozilla Account -->
     <string name="settings_fxa_account_sign_out">Kirjaudu ulos</string>
 
-    <!-- This string is used in the 'Settings' window when user is signed into a Firefox Account, but needs to re-enter their password.
+    <!-- This string is used in the 'Settings' window when user is signed into a Mozilla Account, but needs to re-enter their password.
          Most common reason for this state is that the account password was changed on another device. -->
     <string name="settings_fxa_account_reconnect">Yhdistä uudelleen</string>
 
@@ -174,14 +174,14 @@
     <string name="settings_language_choose_language_voice_search">Valitse ensisijainen kieli äänihakua varten</string>
 
     <!-- This string is used to label a text label that appears in the header of 'Language Settings' ->
-         'Firefox Display Language' dialog window (accessible from the browser's Settings dialog window).
+         'Wolvic Display Language' dialog window (accessible from the browser's Settings dialog window).
          Below this string appears a list of locales for the user to choose as their preferred display
          language for the application UI.
          '%1$s' Will be replaced at runtime with the app name. -->
     <string name="settings_language_choose_display_language_title">%1$s-näyttökieli</string>
 
     <!-- This string is used to label a text label that appears in the header description of 'Language Settings' ->
-         'Firefox Display Language' dialog window (accessible from the browser's Settings dialog window).
+         'Wolvic Display Language' dialog window (accessible from the browser's Settings dialog window).
          Below this string appears a list of locales for the user to choose as their preferred display
          language for the application UI. -->
     <string name="settings_language_choose_language_display_description">Valitse kieli, jolla valikot, viestit ja ilmoitukset näytetään.</string>
@@ -334,17 +334,17 @@
         opens the Firfox Reality support web site in the browser window. -->
     <string name="settings_help">Ohje</string>
 
-    <!-- This string is displayed in the settings header under the Firefox Reality logo. When clicked the settings panel is closed
+    <!-- This string is displayed in the settings header under the Wolvic logo. When clicked the settings panel is closed
          a the survey web site in opened in the currently focused window -->
     <string name="settings_send_your_feedback">Lähetä palautetta</string>
 
-    <!-- This string is used in the 'Settings' window when user is signed-out of Firefox Accounts -->
+    <!-- This string is used in the 'Settings' window when user is signed-out of Mozilla Accounts -->
     <string name="settings_accounts_sign_in">Kirjaudu sisään</string>
 
-    <!-- This string is used in the 'Settings' window when user is signed into a Firefox Account -->
+    <!-- This string is used in the 'Settings' window when user is signed into a Mozilla Account -->
     <string name="settings_accounts_sign_out">Kirjaudu ulos</string>
 
-    <!-- This string is used in the 'Settings' window when user is signed into a Firefox Account, but needs to re-enter their password.
+    <!-- This string is used in the 'Settings' window when user is signed into a Mozilla Account, but needs to re-enter their password.
          Most common reason for this state is that the account password was changed on another device. -->
     <string name="settings_accounts_reconnect">Yhdistä uudelleen</string>
 
@@ -608,11 +608,11 @@
     <string name="off">Pois</string>
 
     <!-- This string is displayed on the left of switched that are used to enable/disable sync when the switch is enabled.
-         i.e. The history switch for Firefox account syncing-->
+         i.e. The history switch for Mozilla account syncing-->
     <string name="sync">Synkronoi</string>
 
     <!-- This string is displayed on the left of switched that are used to enable/disable sync when the switch is enabled.
-         i.e. The history switch for Firefox account syncing-->
+         i.e. The history switch for Mozilla account syncing-->
     <string name="do_not_sync">Älä synkronoi</string>
 
     <!-- This string is displayed in the voice-search dialog box that is shown to the user when they press the
@@ -779,7 +779,7 @@
     <string name="bookmarks_show_all">Näytä kaikki kirjanmerkit</string>
 
     <!-- This string is displayed is the "Sync" button in the bookmarks panel. When pressed the
-         bookmarks are synced with the Firefox account. -->
+         bookmarks are synced with the Mozilla account. -->
     <string name="bookmarks_sync">Synkronoi</string>
 
     <!-- This string is displayed as the title of the history list, which contains the user's visited websites. -->
@@ -849,14 +849,14 @@
     <string name="downloads_sort_download_size_desc">Suurimmat</string>
 
     <!-- This string is displayed is the "Sync" button in the history panel. When pressed the
-         history is synced with the Firefox account. -->
+         history is synced with the Mozilla account. -->
     <string name="fxa_sync">Synkronoi</string>
 
     <!-- This string is displayed is the "Sync" button in the history panel when the sync is in progress. -->
     <string name="fxa_syncing">Synkronoidaan…</string>
 
     <!-- This string is displayed in the title of the FxA sign out dialog displayed when the user clicks on the Sign out button. -->
-    <string name="fxa_signout_confirmation_title">Haluatko kirjautua ulos Firefox-tililtäsi?</string>
+    <string name="fxa_signout_confirmation_title">Haluatko kirjautua ulos Mozilla-tililtäsi?</string>
 
     <!-- This string is displayed in the cancel button of the FxA sign out dialog displayed when the user clicks on the Sign out button.
          If clicked the user will be signed out from their FxA account and the dialog will be dismissed. -->
@@ -1014,7 +1014,7 @@
     <string name="media_pause_tooltip">Tauko</string>
 
     <!-- This string is for the tooltip that appears upon hovering the 'Home' button in the browser's navigation bar.
-         'Home' refers to the browser's start page (e.g., the Firefox Reality Home Page). -->
+         'Home' refers to the browser's start page (e.g., the Wolvic Home Page). -->
     <string name="home_tooltip">Aloitussivu</string>
 
     <!-- This string is for the tooltip that appears upon hovering the 'Voice Search' (microphone) button in the
@@ -1242,6 +1242,13 @@
     <!-- This string is displayed in a button of the Before Unload prompt. Clicking it confirms the navigation and leaves the page. -->
     <string name="before_unload_prompt_leave">Poistu sivulta</string>
 
+    <!-- This string is displayed in the title for dialog that warns users about a navigation that results in a repost. -->
+    <string name="repost_confirm_title">Vahvista lomakkeen uudelleenlähetys</string>
+    <!-- This string is displayed in the message for re-navigation to page that leads to HTTP POST. -->
+    <string name="repost_confirm_message">Etsimäsi sivu käytti antamiasi tietoja. Sivulle palaaminen voi johtaa jokaisen tekemäsi toiminnon toistamiseen. Haluatko jatkaa?</string>
+    <!-- This string is displayed in the resend button for post warning -->
+    <string name="repost_confirm_continue">Jatka</string>
+
     <!-- This string is displayed as the title of a dialog displayed when poor web page performance has been detected. -->
     <string name="performance_title">Huono sivuston suorituskyky</string>
 
@@ -1270,7 +1277,7 @@
     <string name="private_clear_button">Tyhjennä</string>
 
     <!-- This string is displayed on the right of the checkbox in the the pop-up blocking dialog.
-         If the checkbox is checked Firefox will never ask again to block pop-ups for this site -->
+         If the checkbox is checked Wolvic will never ask again to block pop-ups for this site -->
     <string name="popup_block_checkbox">Älä kysy uudestaan tämän sivuston kohdalla</string>
 
     <!-- This string is displayed on the left button of the pop-up blocking dialog.
@@ -1344,6 +1351,10 @@ the Select` button. When clicked it closes all the previously selected tabs -->
     <string name="hamburger_menu_resize">Muuta ikkunan kokoa</string>
 
     <!-- This string is displayed inside the Hamburger menu at the right of the navigation bar. When clicked
+         it opens the find in page option -->
+    <string name="hamburger_menu_find_in_page">Hae sivulta</string>
+
+    <!-- This string is displayed inside the Hamburger menu at the right of the navigation bar. When clicked
          it switches User Agent from desktop to mobile and vice versa -->
     <string name="hamburger_menu_switch_to_desktop">Työpöytätila</string>
 
@@ -1374,10 +1385,10 @@ the Select` button. When clicked it closes all the previously selected tabs -->
 
     <!-- This string is displayed in the body of the what's new dialog that is displayed if the user has updated
          or updated the app and hasn't signed it yet. -->
-    <string name="whats_new_body_sub_1">Firefox-tili mahdollistaa kirjanmerkkien ja historian synkronoinnin kaikkien laitteidesi välillä.</string>
+    <string name="whats_new_body_sub_1">Mozilla-tili mahdollistaa kirjanmerkkien ja historian synkronoinnin kaikkien laitteidesi välillä.</string>
 
     <!-- This string is displayed a button of the what's new dialog that is displayed if the user has updated
-         or updated the app and hasn't signed it yet. If clicked the user is redirected to the Firefox Account sign-in page. -->
+         or updated the app and hasn't signed it yet. If clicked the user is redirected to the Mozilla Account sign-in page. -->
     <string name="whats_new_button_sign_in">Kirjaudu sisään</string>
 
     <!-- This string is displayed a button of the what's new dialog that is displayed if the user has updated
@@ -1534,4 +1545,75 @@ the Select` button. When clicked it closes all the previously selected tabs -->
     <!-- This string is shown in the title of the error dialog displayed if there is any error during an environment setup. -->
     <string name="environment_error_title">Ympäristövirhe</string>
 
-    </resources>
+    <string name="settings_privacy_saved_logins">Tallennetut kirjautumistiedot</string>
+    <string name="settings_privacy_search_engine_title">Hakukone</string>
+    <string name="settings_display">Näyttö</string>
+    <string name="settings_report_speech_data">Raportoi puhetiedot</string>
+    <string name="settings_privacy_logins">Kirjautumistiedot ja salasanat</string>
+    <string name="developer_options_remote_debugging">Ota etävirheenkorjaus käyttöön</string>
+    <string name="security_options_login_saved">Tallennetut kirjautumiset…</string>
+    <string name="settings_privacy_policy_webxr_reset">Nollaa sivustot, jotka eivät voi käyttää virtuaalitodellisuuslaitteita.</string>
+    <string name="settings_privacy_policy_login_exceptions_reset">Nollaa kirjautumispoikkeukset.</string>
+    <string name="settings_privacy_policy_login_exceptions_empty_description">Tallentamattomat kirjautumiset on lueteltu tässä.</string>
+    <string name="settings_privacy_policy_webxr_description">Seuraaville verkkosivustoille ei sallita WebXR API pääsyä VR-laitteeseesi.</string>
+    <string name="settings_privacy_policy_webxr_empty_description">Kun avaat WebXR:ää käyttävän verkkosivuston, voit avata valintaikkunan, jonka avulla voit estää WebXR:n kyseisellä verkkosivustolla.</string>
+    <string name="settings_language_portuguese">portugali</string>
+    <string name="settings_language_portuguese_br">portugali (Brasilia)</string>
+    <string name="settings_version_developer">Kehittäjäversio</string>
+    <string name="developer_options_ua_vr">VR</string>
+    <string name="developer_options_center_windows">Keskitä ikkunat pystysuoraan</string>
+    <string name="display_options_head_lock">Ota päälukko käyttöön</string>
+    <string name="display_options_sound_effect">Käytä äänitehosteita</string>
+    <string name="display_options_latin_auto_complete">Latinalaisen näppäimistön automaattinen täydennys</string>
+    <string name="display_options_windows_distance">Ikkunan etäisyys</string>
+    <string name="developer_options_performance_monitor">Ota suorituskyvyn seuranta käyttöön</string>
+    <string name="developer_options_debug_logging">Ota virheenkorjausloki käyttöön</string>
+    <string name="hardware_acceleration_switch">Ota käyttöliittymän laitteistokiihdytys käyttöön</string>
+    <string name="bypass_cache_on_reload_switch">Ota välimuistin ohitus käyttöön uudelleenladatessa</string>
+    <string name="developer_options_servo">Ota Servo käyttöön</string>
+    <string name="developer_options_clear_user_data_description">Kaikki käyttäjätiedot</string>
+    <string name="experimental_features">Kokeelliset ominaisuudet</string>
+    <string name="developer_options_display_dpi">Näytön DPI:</string>
+    <string name="privacy_options_tracking_off_description">Salli jokaisen sivun seurata sinua verkossa kerätäkseen selaustottumuksiasi ja mielenkiinnonkohteitasi.</string>
+    <string name="developer_options_foveated_app">Foveation-taso (sovellus)</string>
+    <string name="developer_options_foveated_disabled">Poistettu käytöstä</string>
+    <string name="controller_options_haptic_feedback">Haptinen palaute</string>
+    <string name="developer_options_env_void">Tyhjä</string>
+    <string name="developer_options_env_offworld">Maapallon ulkopuolinen maailma</string>
+    <string name="fxa_account_options_device_name">Laitteen nimi</string>
+    <string name="fxa_account_options_sync_description">Valitse, mitä haluat synkronoida laitteillasi Firefoxin avulla</string>
+    <string name="fxa_account_options_logins_sync">Kirjautumiset</string>
+    <string name="security_options_login_autofill">Automaattinen täyttö</string>
+    <string name="security_options_login_exceptions">Poikkeukset…</string>
+    <string name="settings_language_galician">galego</string>
+    <string name="security_options_login_save">Tallenna kirjautumiset ja salasanat</string>
+    <string name="settings_language_choose_language_voice_search_service_description">Valitse haluamasi online-palvelu puhehakua varten.</string>
+    <string name="settings_privacy_policy_login_exceptions_title">Kirjautumispoikkeukset</string>
+    <string name="settings_privacy_policy_tracking_empty_description">Kun annat verkkosivuston seurata toimintaasi, ne näkyvät täällä.</string>
+    <string name="settings_privacy_choose_search_engine_description">Valitse ensisijainen hakukone.</string>
+    <string name="settings_privacy_policy_tracking_reset">Nollaa tehostetun seurannan suojauksen poikkeukset.</string>
+    <string name="settings_privacy_policy_login_exceptions_description">Tallentamattomat kirjautumiset on lueteltu tässä</string>
+    <string name="settings_language_choose_language_voice_search_service_title">Äänihakupalvelu</string>
+    <string name="settings_terms_service">Käyttöehdot</string>
+    <string name="settings_privacy_choose_search_engine_reset">Nollaa hakukoneen asetukset</string>
+    <string name="settings_language_choose_language_content_description">Verkkosivuja tarjotaan joskus useammalla kuin yhdellä kielellä. Valitse haluamasi kielet näytettäväksi ensisijaisuusjärjestyksessä vasemmalle puolelle.</string>
+    <string name="user_feedback_tooltip">Jaa ideoita ja palautetta</string>
+    <string name="developer_options_curved_display">Ota kaareva näyttö käyttöön</string>
+    <string name="developer_options_env_override">Ota ympäristön ohitus käyttöön</string>
+    <string name="multi_e10s_switch">Ota Multi-e10s käyttöön</string>
+    <string name="security_options_login_sync">Synkronoi kirjautumiset Mozilla-tilien kanssa</string>
+    <string name="security_options_login_fxa">Tili…</string>
+    <string name="developer_options_ua_mode">Käyttäjäagenttitila</string>
+    <string name="security_options_downloads_storage">Latausten oletustallennustila</string>
+    <string name="clear_user_data_dialog_title">Tyhjennä %1$s käyttäjätiedot</string>
+    <string name="display_options_start_with_passthrough">Aloita läpivientitilassa</string>
+    <string name="clear_user_data_dialog_text">%1$s nollataan. Kaikki tiedot, mukaan lukien tallennetut kirjautumiset, historia ja kirjanmerkit, poistetaan pysyvästi, jos niitä ei ole synkronoitu.
+\n%1$s sulkeutuu automaattisesti, kun nollaus on valmis. Haluatko jatkaa?</string>
+    <string name="developer_options_display_density">Näytön tiheys:</string>
+    <string name="developer_options_foveated_webvr">Foveation-taso (WebVR)</string>
+    <string name="fxa_account_options_reset">Nollaa</string>
+    <string name="security_options_drm_content_v1">Salli sivustojen automaattisesti tunnistaa laitteesi DRM-ohjatun sisällön toistamiseksi. (&lt;a href=%1$s&gt;Lue lisää&lt;/a&gt;)</string>
+    <string name="new_tab">Uusi välilehti</string>
+    <string name="new_private_tab">Uusi yksityinen välilehti</string>
+    <string name="close_tab">Sulje välilehti</string>
+</resources>

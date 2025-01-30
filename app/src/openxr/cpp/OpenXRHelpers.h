@@ -1,14 +1,16 @@
 #pragma once
 
+#include <array>
 #include <EGL/egl.h>
 #include "jni.h"
+#include "Assertions.h"
 #include <openxr/openxr.h>
 #include <openxr/openxr.h>
 #include <openxr/openxr_platform.h>
 #include <openxr/openxr_reflection.h>
+#include "SystemUtils.h"
 #include "vrb/Matrix.h"
-
-#include <string>
+#include "Device.h"
 
 namespace crow {
 
@@ -18,33 +20,17 @@ namespace crow {
   const vrb::Vector kAverageHeight(0.0f, 1.7f, 0.0f);
 #endif
 
-inline std::string Fmt(const char* fmt, ...) {
-    va_list vl;
-    va_start(vl, fmt);
-    int size = std::vsnprintf(nullptr, 0, fmt, vl);
-    va_end(vl);
+// Hand tracking was thoroughly updated on Pico version 5.7.1
+static const std::string kPicoVersionHandTrackingUpdate = "5.7.1";
 
-    if (size != -1) {
-        std::unique_ptr<char[]> buffer(new char[size + 1]);
-
-        va_start(vl, fmt);
-        size = std::vsnprintf(buffer.get(), size + 1, fmt, vl);
-        va_end(vl);
-        if (size != -1) {
-            return std::string(buffer.get(), size);
-        }
-    }
-
-    throw std::runtime_error("Unexpected vsnprintf failure");
+inline bool CompareBuildIdString(const std::string str) {
+    char buildId[128];
+    return CompareSemanticVersionStrings(GetBuildIdString(buildId), str);
 }
 
 inline std::string GetXrVersionString(XrVersion ver) {
     return Fmt("%d.%d.%d", XR_VERSION_MAJOR(ver), XR_VERSION_MINOR(ver), XR_VERSION_PATCH(ver));
 }
-
-#define CHK_STRINGIFY(x) #x
-#define TOSTRING(x) CHK_STRINGIFY(x)
-#define FILE_AND_LINE __FILE__ ":" TOSTRING(__LINE__)
 
 // Macro to generate stringify functions for OpenXR enumerations based data provided in openxr_reflection.h
 // clang-format off
@@ -64,31 +50,6 @@ MAKE_TO_STRING_FUNC(XrEnvironmentBlendMode);
 MAKE_TO_STRING_FUNC(XrSessionState);
 MAKE_TO_STRING_FUNC(XrResult);
 MAKE_TO_STRING_FUNC(XrFormFactor);
-
-[[noreturn]] inline void Throw(std::string failureMessage, const char* originator = nullptr, const char* sourceLocation = nullptr) {
-    if (originator != nullptr) {
-        failureMessage += Fmt("\n    Origin: %s", originator);
-    }
-    if (sourceLocation != nullptr) {
-        failureMessage += Fmt("\n    Source: %s", sourceLocation);
-    }
-
-    throw std::logic_error(failureMessage);
-}
-
-#define THROW(msg) Throw(msg, nullptr, FILE_AND_LINE);
-#define CHECK(exp)                                      \
-    {                                                   \
-        if (!(exp)) {                                   \
-            Throw("Check failed", #exp, FILE_AND_LINE); \
-        }                                               \
-    }
-#define CHECK_MSG(exp, msg)                  \
-    {                                        \
-        if (!(exp)) {                        \
-            Throw(msg, #exp, FILE_AND_LINE); \
-        }                                    \
-    }
 
 [[noreturn]] inline void ThrowXrResult(XrResult res, const char* originator = nullptr, const char* sourceLocation = nullptr) {
     Throw(Fmt("XrResult failure [%s]", to_string(res)), originator, sourceLocation);
@@ -110,10 +71,7 @@ inline XrResult MessageXrResult(XrResult res, const char* originator = nullptr, 
     return res;
 }
 
-#define THROW_XR(xr, cmd) ThrowXrResult(xr, #cmd, FILE_AND_LINE);
 #define CHECK_XRCMD(cmd) CheckXrResult(cmd, #cmd, FILE_AND_LINE);
-#define CHECK_XRRESULT(res, cmdStr) CheckXrResult(res, cmdStr, FILE_AND_LINE);
-#define XRCMD(cmd) MessageXrResult(cmd, #cmd, FILE_AND_LINE);
 
 #define RETURN_IF_XR_FAILED(cmd, ...)                                                                            \
     {                                                                                                            \
@@ -146,6 +104,34 @@ inline XrPosef MatrixToXrPose(const vrb::Matrix& aMatrix) {
     result.orientation = XrQuaternionf{-q.x(), -q.y(), -q.z(), q.w()};
     result.position = XrVector3f{p.x(), p.y(), p.z()};
     return result;
+}
+
+typedef std::array<XrHandJointLocationEXT, XR_HAND_JOINT_COUNT_EXT> HandJointsArray;
+inline bool IsHandJointPositionValid(const enum XrHandJointEXT aJoint, const HandJointsArray& handJoints) {
+    if (aJoint >= handJoints.size())
+        return false;
+#if SPACES
+    // A bug in spaces leaves the locationFlags always empty. The best we can do is to check that
+    // all positions are not 0.0 (which is what the runtime returns when they aren't tracked).
+    // https://gitlab.freedesktop.org/monado/monado/-/issues/264
+    auto pose = handJoints[aJoint].pose;
+    return pose.position.x != 0.0 && pose.position.y != 0.0 && pose.position.z != 0.0;
+#endif
+    return (handJoints[aJoint].locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT) != 0;
+}
+
+inline XrEnvironmentBlendMode toOpenXRBlendMode(device::BlendMode blendMode) {
+    switch (blendMode) {
+        case device::BlendMode::Opaque:
+            return XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
+        case device::BlendMode::Additive:
+            return XR_ENVIRONMENT_BLEND_MODE_ADDITIVE;
+        case device::BlendMode::AlphaBlend:
+            return XR_ENVIRONMENT_BLEND_MODE_ALPHA_BLEND;
+        default:
+            THROW(Fmt("Unknown blend mode %d", blendMode));
+            return XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
+    }
 }
 
 }  // namespace crow

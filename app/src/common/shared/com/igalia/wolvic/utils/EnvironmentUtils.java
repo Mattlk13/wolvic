@@ -20,6 +20,8 @@ public class EnvironmentUtils {
 
     public static final String ENVS_FOLDER = "envs";
     public static final String BUILTIN_ENVS_PREFIX = "cubemap/";
+    public static String[] SUPPORTED_ENV_EXTENSIONS = (DeviceType.isOculusBuild()) ?
+            new String[]{".jpg", ".png"} : new String[]{".ktx", ".jpg", ".png"};
 
     /**
      * Gets the ouput path for a given environment id.
@@ -60,31 +62,17 @@ public class EnvironmentUtils {
     }
 
     /**
-     * Returns a path in the external for the remote environments unzipping.
+     * Returns a path in the cache for the remote environments unzipping.
      * @param context An activity context.
      * @param envId The environment id. This maps to the Remote properties JSON "value" environment property.
      * @return The location of the environment in the devices memory.
      */
     @Nullable
     public static String getExternalEnvPath(@NonNull Context context, @NonNull String envId) {
-        File outputFolder = context.getExternalFilesDir(ENVS_FOLDER);
-        if (outputFolder != null) {
-            outputFolder = new File(outputFolder, envId);
-            if (!outputFolder.exists()) {
-                if (outputFolder.mkdirs()) {
-                    return outputFolder.getAbsolutePath();
-
-                } else {
-                    return null;
-                }
-
-            } else {
-                return outputFolder.getAbsolutePath();
-            }
-
-        } else {
-            return null;
-        }
+        File outputFolder = new File(context.getCacheDir().getAbsolutePath(), ENVS_FOLDER + "/" + envId);
+        if (outputFolder.exists())
+            return outputFolder.getAbsolutePath();
+        return outputFolder.mkdirs() ? outputFolder.getAbsolutePath() : null;
     }
 
     /**
@@ -98,27 +86,26 @@ public class EnvironmentUtils {
     }
 
     /**
-     * Check wether or not an external environment is ready to be used. Checks is the ouput directory exists
-     * and if it contains 6 items. We make an assumption that those items are the right images and that they
-     * follow the naming convention.
+     * Check whether or not an external environment is ready to be used. Checks if the directory exists
+     * and if it contains at least 6 supported files. We make an assumption that those files are the
+     * right images and that they follow the naming convention.
      * @param context An activity context.
      * @param envId The environment id. This maps to the Remote properties JSON "value" environment property.
      * @return true is the environment is ready, false otherwise
      */
     public static boolean isExternalEnvReady(@NonNull Context context, @NonNull String envId) {
-        boolean isEnvReady = false;
         String envOutputPath = getExternalEnvPath(context, envId);
         if (envOutputPath != null) {
-            File file = new File(envOutputPath);
-            if (file.exists() && file.isDirectory()) {
-                File[] files = file.listFiles();
-                if (files != null && files.length == 6) {
-                    isEnvReady = true;
-                }
+            File envDirectory = new File(envOutputPath);
+            if (envDirectory.exists() && envDirectory.isDirectory()) {
+                File[] envFiles = envDirectory.listFiles(file -> {
+                    String fileName = file.getName().toLowerCase();
+                    return file.isFile() && Arrays.stream(SUPPORTED_ENV_EXTENSIONS).anyMatch(fileName::endsWith);
+                });
+                return envFiles != null && envFiles.length >= 6;
             }
         }
-
-        return isEnvReady;
+        return false;
     }
 
     /**
@@ -215,6 +202,24 @@ public class EnvironmentUtils {
     }
 
     /**
+     * Returns the URL to the environment's payload, with the '_alt' suffix for the devices requiring an
+     * alternative compressed texture format (only JPG and PNG are allowed as alternative to KTX).
+     * @param env An Environment data structure
+     * @return The appropriated URL to the environment's payload .
+     */
+    @Nullable
+    public static String getEnvironmentPayload(Environment env) {
+        if (DeviceType.isPicoXR() || DeviceType.isOculusBuild()) {
+            String payload = env.getPayload();
+            // Meta Quest (after v69) do not support compressed textures for the cubemap.
+            String format = DeviceType.isOculusBuild() ? "_misc" : "_ktx";
+            int at = payload.lastIndexOf(".");
+            return payload.substring(0, at) + format + "_srgb" + payload.substring(at);
+        }
+        return env.getPayload(); // default is 'rgb' and 'ktx'
+    }
+
+    /**
      * Retuns the external environment based for a given environment id. It returns the environment
      * for the current version if the environment exists, otherwise it returns the environment with that id
      * for the most recent previous version.
@@ -289,7 +294,7 @@ public class EnvironmentUtils {
                 RemoteProperties versionProperties = properties.get(versionName);
                 if (versionProperties != null && versionProperties.getEnvironments() != null) {
                     return Arrays.stream(versionProperties.getEnvironments())
-                            .filter(environment -> payloadUrl.equals(environment.getPayload()))
+                            .filter(environment -> payloadUrl.equals(getEnvironmentPayload(environment)))
                             .findFirst()
                             .orElse(null);
                 }
@@ -303,7 +308,7 @@ public class EnvironmentUtils {
                 RemoteProperties props = properties.get(key);
                 if (props != null && props.getEnvironments() != null) {
                     return Arrays.stream(props.getEnvironments())
-                            .filter(environment -> payloadUrl.equals(environment.getPayload()))
+                            .filter(environment -> payloadUrl.equals(getEnvironmentPayload(environment)))
                             .findFirst()
                             .orElse(null);
                 }

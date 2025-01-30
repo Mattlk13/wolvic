@@ -47,6 +47,7 @@ Controller::operator=(const Controller& aController) {
   scrollDeltaY = aController.scrollDeltaY;
   transform = aController.transform;
   beamToggle = aController.beamToggle;
+  modelToggle = aController.modelToggle;
   beamParent = aController.beamParent;
   pointer = aController.pointer;
   transformMatrix = aController.transformMatrix;
@@ -74,6 +75,13 @@ Controller::operator=(const Controller& aController) {
   squeezeActionStartFrameId = aController.squeezeActionStartFrameId;
   squeezeActionStopFrameId = aController.squeezeActionStopFrameId;
   batteryLevel = aController.batteryLevel;
+  hasAim = aController.hasAim;
+  handJointTransforms = aController.handJointTransforms;
+  handJointRadii = aController.handJointRadii;
+  handActionEnabled = aController.handActionEnabled;
+  handActionButtonToggle = aController.handActionButtonToggle;
+  handActionButtonTransform = aController.handActionButtonTransform;
+  selectFactor = aController.selectFactor;
   return *this;
 }
 
@@ -93,6 +101,7 @@ Controller::Reset() {
   scrollDeltaX = scrollDeltaY = 0.0f;
   transform = nullptr;
   beamToggle = nullptr;
+  modelToggle = nullptr;
   beamParent = nullptr;
   pointer = nullptr;
   transformMatrix = Matrix::Identity();
@@ -119,6 +128,13 @@ Controller::Reset() {
   squeezeActionStartFrameId = 0;
   squeezeActionStopFrameId = 0;
   batteryLevel = -1;
+  hasAim = true;
+  handJointTransforms.clear();
+  handJointRadii.clear();
+  handActionEnabled = false;
+  handActionButtonToggle = nullptr;
+  handActionButtonTransform = nullptr;
+  selectFactor = 0.0;
 }
 
 vrb::Vector Controller::StartPoint() const {

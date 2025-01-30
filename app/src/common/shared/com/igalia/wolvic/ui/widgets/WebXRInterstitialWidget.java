@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 
 import androidx.databinding.DataBindingUtil;
 
+import com.igalia.wolvic.PlatformActivity;
 import com.igalia.wolvic.R;
 import com.igalia.wolvic.VRBrowserActivity;
 import com.igalia.wolvic.databinding.WebxrInterstitialBinding;
@@ -39,6 +40,10 @@ public class WebXRInterstitialWidget extends UIWidget implements WidgetManagerDe
         aPlacement.anchorY = 0.5f;
         aPlacement.cylinder = false;
         aPlacement.visible = false;
+        // FIXME: we temporarily disable the creation of a layer for this widget in order to
+        // limit the amount of layers we create, as Pico's runtime only allows 16 at a given time.
+        if (DeviceType.isPicoXR())
+            aPlacement.layer = false;
     }
 
     private void initialize() {
@@ -51,9 +56,6 @@ public class WebXRInterstitialWidget extends UIWidget implements WidgetManagerDe
         setIsHardwareAccelerationEnabled(false);
 
         mSpinnerAnimation = (AnimatedVectorDrawable) mBinding.webxrSpinner.getDrawable();
-        if (DeviceType.isPicoVR()) {
-            ViewUtils.forceAnimationOnUI(mSpinnerAnimation);
-        }
         mWidgetManager.addWebXRListener(this);
 
     }
@@ -85,6 +87,12 @@ public class WebXRInterstitialWidget extends UIWidget implements WidgetManagerDe
         int deviceType = DeviceType.getType();
         if (deviceType == DeviceType.OculusGo) {
             addController(DeviceType.OculusGo, WebXRInterstitialController.HAND_NONE);
+        } else if (deviceType == DeviceType.MetaQuestPro) {
+            addController(DeviceType.MetaQuestPro, WebXRInterstitialController.HAND_LEFT);
+            addController(DeviceType.MetaQuestPro, WebXRInterstitialController.HAND_RIGHT);
+        } else if (deviceType == DeviceType.MetaQuest3) {
+            addController(DeviceType.MetaQuest3, WebXRInterstitialController.HAND_LEFT);
+            addController(DeviceType.MetaQuest3, WebXRInterstitialController.HAND_RIGHT);
         } else if (deviceType == DeviceType.OculusQuest || deviceType == DeviceType.OculusQuest2) {
             addController(DeviceType.OculusQuest, WebXRInterstitialController.HAND_LEFT);
             addController(DeviceType.OculusQuest, WebXRInterstitialController.HAND_RIGHT);
@@ -101,6 +109,24 @@ public class WebXRInterstitialWidget extends UIWidget implements WidgetManagerDe
         } else if (deviceType == DeviceType.PicoNeo3) {
             addController(DeviceType.PicoNeo3, WebXRInterstitialController.HAND_LEFT);
             addController(DeviceType.PicoNeo3, WebXRInterstitialController.HAND_RIGHT);
+        } else if (deviceType == DeviceType.Pico4x) {
+            addController(DeviceType.Pico4x, WebXRInterstitialController.HAND_LEFT);
+            addController(DeviceType.Pico4x, WebXRInterstitialController.HAND_RIGHT);
+        } else if (deviceType == DeviceType.Pico4U) {
+            addController(DeviceType.Pico4U, WebXRInterstitialController.HAND_LEFT);
+            addController(DeviceType.Pico4U, WebXRInterstitialController.HAND_RIGHT);
+        } else if (DeviceType.isHVRBuild()) {
+            if (PlatformActivity.isPositionTrackingSupported()) {
+                addController(DeviceType.HVR6DoF, WebXRInterstitialController.HAND_LEFT);
+                addController(DeviceType.HVR6DoF, WebXRInterstitialController.HAND_RIGHT);
+            } else {
+                addController(DeviceType.HVR3DoF, WebXRInterstitialController.HAND_NONE);
+            }
+        } else if (deviceType == DeviceType.LenovoVRX) {
+            addController(DeviceType.LenovoVRX, WebXRInterstitialController.HAND_LEFT);
+            addController(DeviceType.LenovoVRX, WebXRInterstitialController.HAND_RIGHT);
+        } else if (deviceType == DeviceType.VisionGlass) {
+            addController(DeviceType.VisionGlass, WebXRInterstitialController.HAND_NONE);
         }
         for (UIWidget controller: mControllers) {
             controller.getPlacement().parentHandle = getHandle();

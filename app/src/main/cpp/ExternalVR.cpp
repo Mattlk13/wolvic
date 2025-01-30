@@ -10,6 +10,8 @@
 #include "vrb/Quaternion.h"
 #include "vrb/Vector.h"
 #include "moz_external_vr.h"
+#include "Assertions.h"
+#include <assert.h>
 #include <pthread.h>
 #include <unistd.h>
 
@@ -111,6 +113,13 @@ private:
   VRB_NO_NEW_DELETE
 };
 
+// template method that returns the data size of a std::array of type T
+template <typename T, size_t N>
+size_t
+arraySize(const std::array<T, N>&) {
+  return sizeof(T) * N;
+}
+
 } // namespace
 
 namespace crow {
@@ -158,8 +167,8 @@ struct ExternalVR::State {
     system.displayState.isMounted = true;
     system.displayState.nativeFramebufferScaleFactor = 1.0f;
     const vrb::Matrix identity = vrb::Matrix::Identity();
-    memcpy(&(system.sensorState.leftViewMatrix), identity.Data(), sizeof(system.sensorState.leftViewMatrix));
-    memcpy(&(system.sensorState.rightViewMatrix), identity.Data(), sizeof(system.sensorState.rightViewMatrix));
+    memcpy(system.sensorState.leftViewMatrix.data(), identity.Data(), arraySize(system.sensorState.leftViewMatrix));
+    memcpy(system.sensorState.rightViewMatrix.data(), identity.Data(), arraySize(system.sensorState.rightViewMatrix));
     system.sensorState.pose.orientation[3] = 1.0f;
     lastFrameId = 0;
     firstPresentingFrame = false;
@@ -221,9 +230,21 @@ mozilla::gfx::VRControllerType GetVRControllerTypeByDevice(device::DeviceType aT
     case device::OculusQuest2:
       result = mozilla::gfx::VRControllerType::OculusTouch3;
       break;
+    case device::MetaQuest3:
+      result = mozilla::gfx::VRControllerType::MetaQuest3;
+      break;
+    case device::MetaQuestPro:
+      // FIXME: GeckoView does not support Quest Pro yet. Pretend to be the Quest2
+      result = mozilla::gfx::VRControllerType::OculusTouch3;
+          break;
+    case device::HVR3DoF:
+    case device::HVR6DoF:
+    case device::VisionGlass:
     case device::ViveFocus:
       result = mozilla::gfx::VRControllerType::HTCViveFocus;
       break;
+    // FIXME: Gecko does not support VRX. Controllers look similar to ViveFocusPlus
+    case device::LenovoVRX:
     case device::ViveFocusPlus:
       result = mozilla::gfx::VRControllerType::HTCViveFocusPlus;
       break;
@@ -237,12 +258,27 @@ mozilla::gfx::VRControllerType GetVRControllerTypeByDevice(device::DeviceType aT
       result = mozilla::gfx::VRControllerType::PicoG2;
       break;
     case device::PicoNeo3:
-      result = mozilla::gfx::VRControllerType::PicoNeo2;
+      result = mozilla::gfx::VRControllerType::PicoNeo3;
+      break;
+    case device::Pico4x:
+    case device::Pico4U:
+      // FIXME: Gecko does not support Pico4U device yet, so let's use a similar one for WebXR.
+      result = mozilla::gfx::VRControllerType::Pico4;
+      break;
+    case device::MagicLeap2:
+      // FIXME: Gecko does not support ML2 device yet, so let's use a similar one for WebXR.
+      result = mozilla::gfx::VRControllerType::OculusGo;
+      break;
+    case device::LynxR1:
+      // FIXME: Gecko does not support LynxR1 device yet, so let's use a similar one for WebXR.
+      result = mozilla::gfx::VRControllerType::OculusTouch3;
       break;
     case device::UnknownType:
     default:
       result = mozilla::gfx::VRControllerType::_empty;
-      VRB_LOG("Unknown controller type.");
+#ifndef NOAPI
+      assert(!"Unknown controller type.");
+#endif
       break;
   }
   return  result;
@@ -263,7 +299,7 @@ ExternalVR::SetDeviceName(const std::string& aName) {
   if (aName.length() == 0) {
     return;
   }
-  strncpy(m.system.displayState.displayName, aName.c_str(),
+  strncpy(m.system.displayState.displayName.data(), aName.c_str(),
           mozilla::gfx::kVRDisplayNameMaxLen - 1);
   m.system.displayState.displayName[mozilla::gfx::kVRDisplayNameMaxLen - 1] = '\0';
 }
@@ -333,7 +369,7 @@ ExternalVR::SetEyeTransform(const device::Eye aEye, const vrb::Matrix& aTransfor
   mozilla::gfx::VRDisplayState::Eye which = (aEye == device::Eye::Right
                                              ? mozilla::gfx::VRDisplayState::Eye_Right
                                              : mozilla::gfx::VRDisplayState::Eye_Left);
-  memcpy(&(m.system.displayState.eyeTransform[which]), aTransform.Data(), sizeof(m.system.displayState.eyeTransform[which]));
+  memcpy(m.system.displayState.eyeTransform[which].data(), aTransform.Data(), arraySize(m.system.displayState.eyeTransform[which]));
   m.eyeTransforms[device::EyeIndex(aEye)] = aTransform;
 }
 
@@ -356,7 +392,29 @@ ExternalVR::SetStageSize(const float aWidth, const float aDepth) {
 
 void
 ExternalVR::SetSittingToStandingTransform(const vrb::Matrix& aTransform) {
-  memcpy(&(m.system.displayState.sittingToStandingTransform), aTransform.Data(), sizeof(m.system.displayState.sittingToStandingTransform));
+  memcpy(m.system.displayState.sittingToStandingTransform.data(), aTransform.Data(), arraySize(m.system.displayState.sittingToStandingTransform));
+}
+
+void
+ExternalVR::SetBlendModes(std::vector<device::BlendMode> aBlendModes) {
+  std::fill(m.system.displayState.blendModes.begin(), m.system.displayState.blendModes.end(), mozilla::gfx::VRDisplayBlendMode::_empty);
+  int i = 0;
+  for (const auto& blendMode : aBlendModes) {
+    switch (blendMode) {
+      case device::BlendMode::Opaque:
+        m.system.displayState.blendModes[i++] = mozilla::gfx::VRDisplayBlendMode::Opaque;
+        break;
+      case device::BlendMode::Additive:
+        m.system.displayState.blendModes[i++] = mozilla::gfx::VRDisplayBlendMode::Additive;
+        break;
+      case device::BlendMode::AlphaBlend:
+        m.system.displayState.blendModes[i++] = mozilla::gfx::VRDisplayBlendMode::AlphaBlend;
+        break;
+      default:
+        THROW(Fmt("Unknown blend mode", (int) blendMode));
+        break;
+    }
+  }
 }
 
 void
@@ -462,29 +520,24 @@ ExternalVR::PushFramePoses(const vrb::Matrix& aHeadTransform, const std::vector<
   const vrb::Matrix inverseHeadTransform = aHeadTransform.Inverse();
   vrb::Quaternion quaternion(inverseHeadTransform);
   vrb::Vector translation = aHeadTransform.GetTranslation();
-  memcpy(&(m.system.sensorState.pose.orientation), quaternion.Data(),
-         sizeof(m.system.sensorState.pose.orientation));
-  memcpy(&(m.system.sensorState.pose.position), translation.Data(),
-         sizeof(m.system.sensorState.pose.position));
+  memcpy(m.system.sensorState.pose.orientation.data(), quaternion.Data(), arraySize(m.system.sensorState.pose.orientation));
+  memcpy(m.system.sensorState.pose.position.data(), translation.Data(), arraySize(m.system.sensorState.pose.position));
   m.system.sensorState.inputFrameID++;
   m.system.displayState.lastSubmittedFrameId = m.lastFrameId;
 
   vrb::Matrix leftView = m.eyeTransforms[device::EyeIndex(device::Eye::Left)].Inverse().PostMultiply(inverseHeadTransform);
   vrb::Matrix rightView = m.eyeTransforms[device::EyeIndex(device::Eye::Right)].Inverse().PostMultiply(inverseHeadTransform);
-  memcpy(&(m.system.sensorState.leftViewMatrix), leftView.Data(),
-         sizeof(m.system.sensorState.leftViewMatrix));
-  memcpy(&(m.system.sensorState.rightViewMatrix), rightView.Data(),
-         sizeof(m.system.sensorState.rightViewMatrix));
+  memcpy(m.system.sensorState.leftViewMatrix.data(), leftView.Data(), arraySize(m.system.sensorState.leftViewMatrix));
+  memcpy(m.system.sensorState.rightViewMatrix.data(), rightView.Data(), arraySize(m.system.sensorState.rightViewMatrix));
 
-
-  memset(m.system.controllerState, 0, sizeof(m.system.controllerState));
+  memset(m.system.controllerState.data(), 0, arraySize(m.system.controllerState));
   for (int i = 0; i < aControllers.size(); ++i) {
     const Controller& controller = aControllers[i];
     if (controller.immersiveName.empty() || !controller.enabled) {
       continue;
     }
     mozilla::gfx::VRControllerState& immersiveController = m.system.controllerState[i];
-    memcpy(immersiveController.controllerName, controller.immersiveName.c_str(), controller.immersiveName.size() + 1);
+    memcpy(immersiveController.controllerName.data(), controller.immersiveName.c_str(), controller.immersiveName.size() + 1);
     immersiveController.numButtons = controller.numButtons;
     immersiveController.buttonPressed = controller.immersivePressedState;
     immersiveController.buttonTouched = controller.immersiveTouchedState;
@@ -506,11 +559,11 @@ ExternalVR::PushFramePoses(const vrb::Matrix& aHeadTransform, const std::vector<
       immersiveController.isOrientationValid = true;
 
       vrb::Quaternion rotate(controller.transformMatrix.AfineInverse());
-      memcpy(&(immersiveController.targetRayPose.orientation), rotate.Data(), sizeof(immersiveController.targetRayPose.orientation));
+      memcpy(immersiveController.targetRayPose.orientation.data(), rotate.Data(), arraySize(immersiveController.targetRayPose.orientation));
 
       if (flags & static_cast<uint16_t>(mozilla::gfx::ControllerCapabilityFlags::Cap_Position) || flags & static_cast<uint16_t>(mozilla::gfx::ControllerCapabilityFlags::Cap_PositionEmulated)) {
         vrb::Vector position(controller.transformMatrix.GetTranslation());
-        memcpy(&(immersiveController.targetRayPose.position), position.Data(), sizeof(immersiveController.targetRayPose.position));
+        memcpy(immersiveController.targetRayPose.position.data(), position.Data(), arraySize(immersiveController.targetRayPose.position));
       }
     }
 
@@ -522,8 +575,8 @@ ExternalVR::PushFramePoses(const vrb::Matrix& aHeadTransform, const std::vector<
 #endif
       vrb::Vector position(immersiveBeamTransform.GetTranslation());
       vrb::Quaternion rotate(immersiveBeamTransform.AfineInverse());
-      memcpy(&(immersiveController.pose.position), position.Data(), sizeof(immersiveController.pose.position));
-      memcpy(&(immersiveController.pose.orientation), rotate.Data(), sizeof(immersiveController.pose.orientation));
+      memcpy(immersiveController.pose.position.data(), position.Data(), arraySize(immersiveController.pose.position));
+      memcpy(immersiveController.pose.orientation.data(), rotate.Data(), arraySize(immersiveController.pose.orientation));
     }
 
     // TODO:: We should add TargetRayMode::_end in moz_external_vr.h to help this check.
@@ -534,6 +587,25 @@ ExternalVR::PushFramePoses(const vrb::Matrix& aHeadTransform, const std::vector<
     immersiveController.selectActionStopFrameId = controller.selectActionStopFrameId;
     immersiveController.squeezeActionStartFrameId = controller.squeezeActionStartFrameId;
     immersiveController.squeezeActionStopFrameId = controller.squeezeActionStopFrameId;
+
+#if CHROMIUM
+    // WebXR hand-tracking support
+    if (controller.mode == ControllerMode::Hand) {
+      immersiveController.hasHandTrackingData = true;
+
+      // While XR_EXT_hand_tracking extension specifies 26 joints, WebXR Hand input defines only
+      // 25, being the palm joint the one omitted.
+      // See https://registry.khronos.org/OpenXR/specs/1.0/html/xrspec.html#convention-of-hand-joints
+      // vs. https://www.w3.org/TR/webxr-hand-input-1/#skeleton-joints-section.
+      // Since the palm joint is at index zero, we pass joints from 1 to 25 (omitting the palm).
+      assert(controller.handJointTransforms.size() == mozilla::gfx::kHandTrackingNumJoints + 1);
+      for (int j = 0; j < mozilla::gfx::kHandTrackingNumJoints; j++) {
+        memcpy(immersiveController.handTrackingData.handJointData[j].transform.data(),
+               &controller.handJointTransforms[j + 1], sizeof(vrb::Matrix));
+        immersiveController.handTrackingData.handJointData[j].radius = controller.handJointRadii[j + 1];
+      }
+    }
+#endif
   }
 
   m.system.sensorState.timestamp = aTimestamp;
@@ -555,11 +627,19 @@ ExternalVR::WaitFrameResult() {
       // VRB_LOG("RequestFrame BREAK %llu",  m.browser.layerState[0].layer_stereo_immersive.frameId);
       break;
     }
+
+#if CHROMIUM
+    if(m.browser.dropFrame) {
+       m.system.displayState.droppedFrameCount++;
+       return false;
+    }
+#endif
+
     if (m.firstPresentingFrame || m.waitingForExit) {
       return true; // Do not block to show loading screen until the first frame arrives.
     }
     // VRB_LOG("RequestFrame ABOUT TO WAIT FOR FRAME %llu %llu",m.browser.layerState[0].layer_stereo_immersive.frameId, m.lastFrameId);
-    const float kConditionTimeout = 0.1f;
+    const float kConditionTimeout = 0.25f;
     // Wait causes the current thread to block until the condition variable is notified or the timeout happens.
     // Waiting for the condition variable releases the mutex atomically. So GV can modify the browser data.
     if (!wait.DoWait(kConditionTimeout)) {
@@ -606,10 +686,6 @@ ExternalVR::SetHapticState(ControllerContainerPtr aControllerContainer) const {
         break;
       }
     }
-    // All hapticState has already been reset to zero, so it can't be match.
-    if (j == mozilla::gfx::kVRHapticsMaxCount) {
-      aControllerContainer->SetHapticFeedback(i, 0, 0.0f, 0.0f);
-    }
   }
 }
 
@@ -640,6 +716,34 @@ ExternalVR::StopPresenting() {
   m.system.displayState.presentingGeneration++;
   PushSystemState();
   m.waitingForExit = true;
+}
+
+device::BlendMode
+ExternalVR::GetImmersiveBlendMode() const {
+  ASSERT(IsPresenting());
+  switch (m.browser.blendMode) {
+    case mozilla::gfx::VRDisplayBlendMode::_empty:
+    case mozilla::gfx::VRDisplayBlendMode::Opaque:
+      return device::BlendMode::Opaque;
+    case mozilla::gfx::VRDisplayBlendMode::Additive:
+      return device::BlendMode::Additive;
+    case mozilla::gfx::VRDisplayBlendMode::AlphaBlend:
+      return device::BlendMode::AlphaBlend;
+  }
+}
+
+DeviceDelegate::ImmersiveXRSessionType
+ExternalVR::GetImmersiveXRSessionType() const {
+  ASSERT(IsPresenting());
+  switch (m.browser.sessionType) {
+    case mozilla::gfx::ImmersiveXRSessionType::VR:
+      return DeviceDelegate::ImmersiveXRSessionType::VR;
+    case mozilla::gfx::ImmersiveXRSessionType::AR:
+      return DeviceDelegate::ImmersiveXRSessionType::AR;
+    default:
+      THROW(Fmt("Unknown immersive session type %d", (int) m.browser.sessionType));
+      return DeviceDelegate::ImmersiveXRSessionType::VR;
+  }
 }
 
 ExternalVR::ExternalVR(): m(State::Instance()) {

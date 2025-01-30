@@ -4,14 +4,17 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.SearchView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.databinding.DataBindingUtil;
 
+import com.igalia.wolvic.BuildConfig;
 import com.igalia.wolvic.R;
 import com.igalia.wolvic.VRBrowserActivity;
 import com.igalia.wolvic.VRBrowserApplication;
@@ -28,12 +31,19 @@ public class LibraryPanel extends FrameLayout {
     private LibraryBinding mBinding;
     protected WidgetManagerDelegate mWidgetManager;
     protected Executor mUIThreadExecutor;
+    private WebAppsView mWebAppsView;
     private BookmarksView mBookmarksView;
     private HistoryView mHistoryView;
     private DownloadsView mDownloadsView;
     private AddonsView mAddonsView;
+    private SystemNotificationsView mSystemNotificationsView;
     private LibraryView mCurrentView;
-    private @Windows.PanelType int mCurrentPanel;
+    private Windows.ContentType mCurrentPanel;
+    private Controller mController;
+
+    public interface Controller {
+        void setPanelContent(Windows.ContentType contentType);
+    }
 
     public LibraryPanel(@NonNull Context context) {
         super(context);
@@ -52,13 +62,15 @@ public class LibraryPanel extends FrameLayout {
 
     protected void initialize() {
         mWidgetManager = ((VRBrowserActivity) getContext());
-        mUIThreadExecutor = ((VRBrowserApplication)getContext().getApplicationContext()).getExecutors().mainThread();
+        mUIThreadExecutor = ((VRBrowserApplication) getContext().getApplicationContext()).getExecutors().mainThread();
 
+        mWebAppsView = new WebAppsView(getContext(), this);
         mBookmarksView = new BookmarksView(getContext(), this);
         mHistoryView = new HistoryView(getContext(), this);
         mDownloadsView = new DownloadsView(getContext(), this);
         mAddonsView = new AddonsView(getContext(), this);
-        mCurrentPanel = Windows.BOOKMARKS;
+        mSystemNotificationsView = new SystemNotificationsView(getContext(), this);
+        mCurrentPanel = Windows.ContentType.BOOKMARKS;
 
         updateUI();
     }
@@ -71,7 +83,27 @@ public class LibraryPanel extends FrameLayout {
 
         // Inflate this data binding layout
         mBinding = DataBindingUtil.inflate(inflater, R.layout.library, this, true);
+
+        mBinding.searchBar.setIconifiedByDefault(false);
+        mBinding.searchBar.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String s) {
+                mCurrentView.updateSearchFilter(s.toLowerCase());
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String s) {
+                mCurrentView.updateSearchFilter(s.toLowerCase());
+                return true;
+            }
+        });
+        mBinding.searchBar.setOnCloseListener(() -> {
+            mCurrentView.updateSearchFilter("");
+            return true;
+        });
         mBinding.setLifecycleOwner((VRBrowserActivity) getContext());
+        mBinding.setSupportsSystemNotifications(BuildConfig.SUPPORTS_SYSTEM_NOTIFICATIONS);
         mBinding.setDelegate(new LibraryNavigationDelegate() {
             @Override
             public void onClose(@NonNull View view) {
@@ -87,9 +119,11 @@ public class LibraryPanel extends FrameLayout {
             }
 
             @Override
-            public void onButtonClick(@NonNull View view) {
+            public void onButtonClick(Windows.ContentType contentType) {
                 requestFocus();
-                selectTab(view);
+                if (mController != null) {
+                    mController.setPanelContent(contentType);
+                }
             }
         });
         mBinding.executePendingBindings();
@@ -112,8 +146,10 @@ public class LibraryPanel extends FrameLayout {
 
         mHistoryView.updateUI();
         mBookmarksView.updateUI();
+        mWebAppsView.updateUI();
         mDownloadsView.updateUI();
         mAddonsView.updateUI();
+        mSystemNotificationsView.updateUI();
 
         updateUI();
     }
@@ -121,6 +157,8 @@ public class LibraryPanel extends FrameLayout {
     public void onShow() {
         if (mCurrentView != null) {
             mCurrentView.onShow();
+            mBinding.searchBar.setQuery("", false);
+            mBinding.searchBar.clearFocus();
         }
     }
 
@@ -141,79 +179,101 @@ public class LibraryPanel extends FrameLayout {
     public void onDestroy() {
         mBookmarksView.onDestroy();
         mHistoryView.onDestroy();
+        mWebAppsView.onDestroy();
         mDownloadsView.onDestroy();
         mAddonsView.onDestroy();
+        mSystemNotificationsView.onDestroy();
     }
 
-    public @Windows.PanelType int getSelectedPanelType() {
+    public void setController(Controller controller) {
+        mController = controller;
+    }
+
+    public Windows.ContentType getSelectedPanelType() {
         if (mCurrentView == mBookmarksView) {
-            return Windows.BOOKMARKS;
+            return Windows.ContentType.BOOKMARKS;
+
+        } else if (mCurrentView == mWebAppsView) {
+            return Windows.ContentType.WEB_APPS;
 
         } else if (mCurrentView == mHistoryView) {
-            return Windows.HISTORY;
+            return Windows.ContentType.HISTORY;
 
         } else if (mCurrentView == mDownloadsView) {
-            return Windows.DOWNLOADS;
+            return Windows.ContentType.DOWNLOADS;
 
         } else if (mCurrentView == mAddonsView) {
-            return Windows.ADDONS;
+            return Windows.ContentType.ADDONS;
+
+        } else if (mCurrentView == mSystemNotificationsView) {
+            return Windows.ContentType.NOTIFICATIONS;
 
         } else {
-            return Windows.NONE;
+            return Windows.ContentType.WEB_CONTENT;
         }
     }
 
-    private void selectTab(@NonNull View view) {
+    public void selectPanel(Windows.ContentType panelType) {
+        mCurrentPanel = panelType;
+
+        if (panelType == Windows.ContentType.WEB_CONTENT) {
+            panelType = getSelectedPanelType();
+        }
+
         mBinding.tabcontent.removeAllViews();
 
+        if (BuildConfig.FLAVOR_backend.equals("chromium")) {
+            mBinding.addons.setVisibility(View.GONE);
+        }
+
         mBinding.bookmarks.setActiveMode(false);
+        mBinding.webApps.setActiveMode(false);
         mBinding.history.setActiveMode(false);
         mBinding.downloads.setActiveMode(false);
         mBinding.addons.setActiveMode(false);
-        if(view.getId() == R.id.bookmarks){
-            selectBookmarks();
+        mBinding.notifications.setActiveMode(false);
 
-        } else if(view.getId() == R.id.history){
-            selectHistory();
-
-        } else if(view.getId() == R.id.downloads){
-            selectDownloads();
-
-        } else if(view.getId() == R.id.addons){
-            selectAddons();
+        switch (panelType) {
+            case WEB_CONTENT:
+                break;
+            case BOOKMARKS:
+                selectBookmarks();
+                break;
+            case WEB_APPS:
+                selectWebApps();
+                break;
+            case HISTORY:
+                selectHistory();
+                break;
+            case DOWNLOADS:
+                selectDownloads();
+                break;
+            case ADDONS:
+                selectAddons();
+                break;
+            case NOTIFICATIONS:
+                selectNotifications();
+                break;
         }
 
         mBinding.setCanGoBack(mCurrentView.canGoBack());
         mCurrentView.onShow();
-    }
 
-    public void selectPanel(@Windows.PanelType int panelType) {
-        mCurrentPanel = panelType;
-
-        if (panelType == Windows.NONE) {
-            panelType = getSelectedPanelType();
-        }
-        switch (panelType) {
-            case Windows.NONE:
-            case Windows.BOOKMARKS:
-                selectTab(mBinding.bookmarks);
-                break;
-            case Windows.HISTORY:
-                selectTab(mBinding.history);
-                break;
-            case Windows.DOWNLOADS:
-                selectTab(mBinding.downloads);
-                break;
-            case Windows.ADDONS:
-                selectTab(mBinding.addons);
-                break;
-        }
+        mBinding.searchBar.setQuery("", false);
+        mBinding.searchBar.clearFocus();
+        mBinding.searchBar.setVisibility(mCurrentView.supportsSearch() ? View.VISIBLE : View.INVISIBLE);
     }
 
     private void selectBookmarks() {
         mCurrentView = mBookmarksView;
         mBinding.bookmarks.setActiveMode(true);
         mBinding.tabcontent.addView(mBookmarksView);
+    }
+
+    private void selectWebApps() {
+        mCurrentView = mWebAppsView;
+        mBinding.webApps.setActiveMode(true);
+        mBinding.tabcontent.addView(mWebAppsView);
     }
 
     private void selectHistory() {
@@ -232,6 +292,12 @@ public class LibraryPanel extends FrameLayout {
         mCurrentView = mAddonsView;
         mBinding.addons.setActiveMode(true);
         mBinding.tabcontent.addView(mAddonsView);
+    }
+
+    private void selectNotifications() {
+        mCurrentView = mSystemNotificationsView;
+        mBinding.notifications.setActiveMode(true);
+        mBinding.tabcontent.addView(mSystemNotificationsView);
     }
 
     public void onViewUpdated(@NonNull String title) {

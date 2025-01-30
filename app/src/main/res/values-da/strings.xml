@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- IMPORTANT NOTE: If this file is updated anyhow, the STRs wiki must be updated accordingly:
-    https://github.com/MozillaReality/FirefoxReality/wiki/L10n -->
+    https://github.com/Igalia/wolvic/wiki/Localization -->
     <!-- This string is used on the virtual keyboard to label the 'Enter' key (stylized in uppercase letters as 'ENTER'). -->
     <string name="keyboard_enter_label">ENTER</string>
     <!-- This string is used on the virtual keyboard to label the 'Enter' key with a "Go" IME action.
@@ -128,13 +128,13 @@
     <!-- This string is used to label a button in the 'Settings' dialog window that, when pressed,
          opens a dialog box that contains settings that an application or Web developer might want to change. -->
     <string name="settings_developer_options">Indstillinger for udviklere</string>
-    <!-- This string is used in the 'Settings' window when user is not signed into a Firefox Account -->
+    <!-- This string is used in the 'Settings' window when user is not signed into a Mozilla Account -->
     <string name="settings_fxa_account_sign_in">Log in på konto</string>
-    <!-- This string is used in the 'Settings' window when user is signed into a Firefox Account -->
+    <!-- This string is used in the 'Settings' window when user is signed into a Mozilla Account -->
     <string name="settings_fxa_account_manage">Håndter konto</string>
-    <!-- This string is used in the 'Account' window when user is signed into a Firefox Account -->
+    <!-- This string is used in the 'Account' window when user is signed into a Mozilla Account -->
     <string name="settings_fxa_account_sign_out">Log ud</string>
-    <!-- This string is used in the 'Settings' window when user is signed into a Firefox Account, but needs to re-enter their password.
+    <!-- This string is used in the 'Settings' window when user is signed into a Mozilla Account, but needs to re-enter their password.
          Most common reason for this state is that the account password was changed on another device. -->
     <string name="settings_fxa_account_reconnect">Genopret forbindelse</string>
     <!-- This string is used to label a button in the 'Settings' dialog window that, when pressed,
@@ -160,13 +160,13 @@
          (e.g., `Español` is mapped to `es`) when configured in the 'Voice Search' system. -->
     <string name="settings_language_choose_language_voice_search">Vælg dit foretrukne sprog til stemme-søgning</string>
     <!-- This string is used to label a text label that appears in the header of 'Language Settings' ->
-         'Firefox Display Language' dialog window (accessible from the browser's Settings dialog window).
+         'Wolvic Display Language' dialog window (accessible from the browser's Settings dialog window).
          Below this string appears a list of locales for the user to choose as their preferred display
          language for the application UI.
          '%1$s' Will be replaced at runtime with the app name. -->
     <string name="settings_language_choose_display_language_title">%1$s visnings-sprog</string>
     <!-- This string is used to label a text label that appears in the header description of 'Language Settings' ->
-         'Firefox Display Language' dialog window (accessible from the browser's Settings dialog window).
+         'Wolvic Display Language' dialog window (accessible from the browser's Settings dialog window).
          Below this string appears a list of locales for the user to choose as their preferred display
          language for the application UI. -->
     <string name="settings_language_choose_language_display_description">Vælg sprog, der skal anvendes i menuer, meddelelser og beskeder.</string>
@@ -281,6 +281,9 @@
     The string is also used in the keyboard space bar to show the current keyboard language and in
     the keyboard languages panel list. -->
     <string name="settings_language_dutch">Hollandsk</string>
+    <string name="settings_language_galician">Galicisk</string>
+    <string name="settings_language_portuguese_br">Portugisisk (Brasilien)</string>
+    <string name="settings_language_portuguese">Portugisisk</string>
     <!-- The string is used in the keyboard space bar to show the current keyboard language and in
     the keyboard languages panel list. -->
     <string name="settings_language_thai">Thai</string>
@@ -303,14 +306,14 @@
     <!-- This string is used to label a button in the 'Settings' dialog window that, when pressed,
         opens the Firfox Reality support web site in the browser window. -->
     <string name="settings_help">Hjælp</string>
-    <!-- This string is displayed in the settings header under the Firefox Reality logo. When clicked the settings panel is closed
+    <!-- This string is displayed in the settings header under the Wolvic logo. When clicked the settings panel is closed
          a the survey web site in opened in the currently focused window -->
     <string name="settings_send_your_feedback">Send din feedback</string>
-    <!-- This string is used in the 'Settings' window when user is signed-out of Firefox Accounts -->
+    <!-- This string is used in the 'Settings' window when user is signed-out of Mozilla Accounts -->
     <string name="settings_accounts_sign_in">Log ind</string>
-    <!-- This string is used in the 'Settings' window when user is signed into a Firefox Account -->
+    <!-- This string is used in the 'Settings' window when user is signed into a Mozilla Account -->
     <string name="settings_accounts_sign_out">Log ud</string>
-    <!-- This string is used in the 'Settings' window when user is signed into a Firefox Account, but needs to re-enter their password.
+    <!-- This string is used in the 'Settings' window when user is signed into a Mozilla Account, but needs to re-enter their password.
          Most common reason for this state is that the account password was changed on another device. -->
     <string name="settings_accounts_reconnect">Genopret forbindelse</string>
     <!-- This string is used to label a button in the 'Settings' dialog window that, when pressed,
@@ -506,7 +509,7 @@
     <string name="fxa_account_options_syncing">Synkroniserer...</string>
     <!-- This string is used in the FxA account manager panel as a header for the sync options for syncing
          history, bookmarks, passwords, etc. -->
-    <string name="fxa_account_options_sync_description">Vælg hvad du vil synkronisere på dine enheder med Firefox </string>
+    <string name="fxa_account_options_sync_description">Vælg hvad du vil synkronisere på dine enheder med Firefox Sync</string>
     <!-- This string is used to in the FxA account manage panel as a description for the Bookmarks sync switch. -->
     <string name="fxa_account_options_bookmarks_sync">Bogmærker</string>
     <!-- This string is used to in the FxA account manage panel as a description for the History sync switch. -->
@@ -553,11 +556,11 @@
      and is used to enable or disable login auto-fill. If disabled the logins forms won't be auto-filled. -->
     <string name="security_options_login_autofill">Autofyld</string>
     <!-- This string labels an Allow/Don't Allow switch in the Logins And Passwords settings dialog
-     and is used to enable or disable login sync with Firefox Account. If disabled the logins
-     won't be synced with the Firefox Account. -->
-    <string name="security_options_login_sync">Synkroniser logins med Firefox-konti</string>
+     and is used to enable or disable login sync with Mozilla Account. If disabled the logins
+     won't be synced with the Mozilla Account. -->
+    <string name="security_options_login_sync">Synkroniser logins med Mozilla-konti</string>
     <!-- This string labels a button in the Logins And Passwords settings dialog
-     that when clicked opens the Firefox Accounts settings panel. -->
+     that when clicked opens the Mozilla Accounts settings panel. -->
     <string name="security_options_login_fxa">Konto…</string>
     <!-- This string labels a button in the Logins And Passwords settings dialog
      that when clicked opens the saved logins panel which lists all the stored logins/password entries. -->
@@ -612,7 +615,7 @@
          webxr blocked sites. -->
     <string name="security_options_webxr_settings">Avanceret</string>
     <!-- This string is a label above the group of switches that indicates that the switches below
-         relate to Firefox data collection and use.
+         relate to Wolvic data collection and use.
          '%1$s' Will be replaced at runtime with the app name. -->
     <string name="security_options_speech_data_collection_title">%1$s Dataindsamling og -brug</string>
     <!-- This string labels an Allow/Don't Allow switch in the Privacy and Security settings dialog
@@ -632,17 +635,17 @@
     <!-- This string is displayed below the On/Off switch to indicate a switch's current state as 'Off'. -->
     <string name="off">Fra</string>
     <!-- This string is displayed on the left of switched that are used to enable/disable sync when the switch is enabled.
-         i.e. The history switch for Firefox account syncing-->
+         i.e. The history switch for Mozilla account syncing-->
     <string name="sync">Synkroniser</string>
     <!-- This string is displayed on the left of switched that are used to enable/disable sync when the switch is enabled.
-         i.e. The history switch for Firefox account syncing-->
+         i.e. The history switch for Mozilla account syncing-->
     <string name="do_not_sync">Synkroniser ikke</string>
     <!-- This string is displayed in the voice-search dialog box that is shown to the user when they press the
          button used to initiate Voice Search. -->
     <string name="voice_search_start">Hvad vil du søge efter på nettet?</string>
     <!-- This string is displayed in the voice-search dialog box that is shown to the user when they press the
          button used to initiate Voice Search. -->
-    <string name="voice_search_example">Sig for eksempel: “360 videos, weather, news…”</string>
+    <string name="voice_search_example">Sig for eksempel: “360 videos, vejret, nyheder…”</string>
     <!-- This string is displayed in a dialog box show to the user while the Voice Search is being
          performed. It indicates that the search query is running and they should wait for the result. -->
     <string name="voice_search_decoding">Søger…</string>
@@ -672,7 +675,7 @@
     <string name="crash_dialog_heading">Vi løb ind i et problem, der førte til nedbrud</string>
     <!-- This string explains why Mozilla would like the user to allow the crash data to be uploaded.
          '%1$s' will be replaced at runtime with the app's domain name. -->
-    <string name="crash_dialog_message"><![CDATA[Hjælp Mozilla med at gøre %1$s bedre ved at indsende dine nedbruds-data.]]></string>
+    <string name="crash_dialog_message"><![CDATA[Hjælp Mozilla med at gøre %1$s bedre ved at indsende dine nedbruds-data. <a href="more">Læs mere</a>]]></string>
     <!-- This string labels a checkbox in the crash dialog box. When checked, the user will no longer
          be prompted for permission to upload crash data after an application crash. -->
     <string name="crash_dialog_send_data">Send altid data uden at spørge</string>
@@ -781,7 +784,7 @@
          all the bookmarks. -->
     <string name="bookmarks_show_all">Vis alle bogmærker</string>
     <!-- This string is displayed is the "Sync" button in the bookmarks panel. When pressed the
-         bookmarks are synced with the Firefox account. -->
+         bookmarks are synced with the Mozilla account. -->
     <string name="bookmarks_sync">Synkroniser</string>
     <!-- This string is displayed as the title of the history list, which contains the user's visited websites. -->
     <string name="history_title">Historik</string>
@@ -930,12 +933,12 @@
     <!-- This string is displayed at the bottom of the addon permissions list view. When clicked it will open a new tab with the addons permissions SUMO page -->
     <string name="addons_permissions_learn_more">Læs mere om tilladelser</string>
     <!-- This string is displayed is the "Sync" button in the history panel. When pressed the
-         history is synced with the Firefox account. -->
+         history is synced with the Mozilla account. -->
     <string name="fxa_sync">Synkroniser</string>
     <!-- This string is displayed is the "Sync" button in the history panel when the sync is in progress. -->
     <string name="fxa_syncing">Synkroniserer…</string>
     <!-- This string is displayed in the title of the FxA sign out dialog displayed when the user clicks on the Sign out button. -->
-    <string name="fxa_signout_confirmation_title">Vil du logge ud fra din Firefox-konto?</string>
+    <string name="fxa_signout_confirmation_title">Vil du logge ud fra din Mozilla-konto?</string>
     <!-- This string is displayed in the body of the FxA sign out dialog displayed when the user clicks on the Sign out button. -->
     <string name="fxa_signout_confirmation_body">Når du logger ud, kan du ikke sende eller modtage faneblade fra andre enheder. Dine bogmærker og din historik vil heller ikke blive synkroniseret længere.</string>
     <!-- This string is displayed in the checkbox text of the FxA sign out dialog displayed when the user clicks on the Sign out button.
@@ -1077,7 +1080,7 @@
          When clicked the current media playback is paused. -->
     <string name="media_pause_tooltip">Pause</string>
     <!-- This string is for the tooltip that appears upon hovering the 'Home' button in the browser's navigation bar.
-         'Home' refers to the browser's start page (e.g., the Firefox Reality Home Page). -->
+         'Home' refers to the browser's start page (e.g., the Wolvic Home Page). -->
     <string name="home_tooltip">Hjem</string>
     <!-- This string is for the tooltip that appears upon hovering the 'Voice Search' (microphone) button in the
          browser's navigation bar. 'Voice Search' refers to the browser's system for searching the Web using
@@ -1218,12 +1221,6 @@
     <!-- This string is for the tooltip that appears when the user hovers over the 'Downloads' icon in the
          tray and the Downloads view is closed. The button it labels, when pressed, closes the Downloads view. -->
     <string name="close_downloads_tooltip">Luk Filhentninger</string>
-    <!-- This string is for the tooltip that appears when the user hovers over the 'Library' icon in the
-         tray and the Library view is closed. The button it labels, when pressed, opens the library panel. -->
-    <string name="open_library_tooltip">Åbn arkiv</string>
-    <!-- This string is for the tooltip that appears when the user hovers over the 'Library' icon in the
-         tray and the Library view is closed. The button it labels, when pressed, closes the Library panel. -->
-    <string name="close_library_tooltip">Luk arkiv</string>
     <!-- This string is for the tooltip that appears when the user hovers over the 'What's New' icon in the
          Navigation Bar. The button it labels, when pressed, open the release notes page. -->
     <string name="whats_new_tooltip">Nyheder</string>
@@ -1281,6 +1278,12 @@
     <string name="before_unload_prompt_stay">Bliv på siden</string>
     <!-- This string is displayed in a button of the Before Unload prompt. Clicking it confirms the navigation and leaves the page. -->
     <string name="before_unload_prompt_leave">Forlad siden</string>
+    <!-- This string is displayed in the title for dialog that warns users about a navigation that results in a repost. -->
+    <string name="repost_confirm_title">Bekræft genindsendelse af formular</string>
+    <!-- This string is displayed in the message for re-navigation to page that leads to HTTP POST. -->
+    <string name="repost_confirm_message">Siden, du søger, benyttede oplysninger, du har indtastet. Vender du tilbage til denne side kan det betyde, at enhver handling, du har foretaget, skal gentages. Vil du fortsætte?</string>
+    <!-- This string is displayed in the resend button for post warning -->
+    <string name="repost_confirm_continue">Fortsæt</string>
     <!-- This string is displayed in a button that when pressed allows a user to view a page that has been blocked from being displayed.-->
     <string name="performance_unblock_page">Fjern blokering af side</string>
     <!-- This string is displayed as the title of a dialog displayed when poor web page performance has been detected. -->
@@ -1324,7 +1327,7 @@
     <!-- This string is displayed as a description below the title of the pop-up blocking dialog. -->
     <string name="popup_block_description_v1">Vil du vise dem alligevel?</string>
     <!-- This string is displayed on the right of the checkbox in the the pop-up blocking dialog.
-         If the checkbox is checked Firefox will never ask again to block pop-ups for this site -->
+         If the checkbox is checked Wolvic will never ask again to block pop-ups for this site -->
     <string name="popup_block_checkbox">Spørg ikke igen for dette websted</string>
     <!-- This string is displayed on the left button of the pop-up blocking dialog.
          If the button is clicked the pop-up will be shown -->
@@ -1383,6 +1386,9 @@ the Select` button. When clicked it closes all the previously selected tabs -->
          it opens the window resize panel -->
     <string name="hamburger_menu_resize">Tilpas vinduesstørrelse</string>
     <!-- This string is displayed inside the Hamburger menu at the right of the navigation bar. When clicked
+         it opens the find in page option -->
+    <string name="hamburger_menu_find_in_page">Find på side</string>
+    <!-- This string is displayed inside the Hamburger menu at the right of the navigation bar. When clicked
          it opens the addons panel -->
     <string name="hamburger_menu_addons">Tilføjelser</string>
     <!-- This string is displayed inside the Hamburger menu at the right of the navigation bar. When clicked
@@ -1407,12 +1413,12 @@ the Select` button. When clicked it closes all the previously selected tabs -->
     <string name="whats_new_title_1">Log ind for at sende faneblade</string>
     <!-- This string is displayed in the body of the what's new dialog that is displayed if the user has updated
          or updated the app and hasn't signed it yet. -->
-    <string name="whats_new_body_1">Log ind eller opret en ny Firefox-konto for at sende faneblade fra Firefox på din computer eller din mobile enhed til dit headset.</string>
+    <string name="whats_new_body_1">Log ind eller opret en ny Mozilla-konto for at sende faneblade fra Firefox på din computer eller din mobile enhed til dit headset.</string>
     <!-- This string is displayed in the body of the what's new dialog that is displayed if the user has updated
          or updated the app and hasn't signed it yet. -->
-    <string name="whats_new_body_sub_1">Med en Firefox-konto kan du nemt synkronisere bogmærker og historik mellem alle dine enheder.</string>
+    <string name="whats_new_body_sub_1">Med en Mozilla-konto kan du nemt synkronisere bogmærker og historik mellem alle dine enheder.</string>
     <!-- This string is displayed a button of the what's new dialog that is displayed if the user has updated
-         or updated the app and hasn't signed it yet. If clicked the user is redirected to the Firefox Account sign-in page. -->
+         or updated the app and hasn't signed it yet. If clicked the user is redirected to the Mozilla Account sign-in page. -->
     <string name="whats_new_button_sign_in">Log ind</string>
     <!-- This string is displayed a button of the what's new dialog that is displayed if the user has updated
          or updated the app and hasn't signed it yet. If clicked the dialog is dismissed. -->
@@ -1596,9 +1602,125 @@ the Select` button. When clicked it closes all the previously selected tabs -->
     <string name="tray_status_headset">Headset: %1$s</string>
     <string name="settings_privacy_search_engine_title">Søgetjeneste</string>
     <string name="settings_privacy_choose_search_engine_reset">Gendan søgetjeneste indstillinger</string>
-    <string name="settings_privacy_choose_search_engine_description">Vælg din standard-søgetjeneste</string>
+    <string name="settings_privacy_choose_search_engine_description">Vælg din standard-søgetjeneste.</string>
     <string name="voice_search_unsupported">Stemme-søgning understøttes ikke på dit sprog.</string>
     <string name="voice_search_server_error">Stemme-søgning er i øjeblikket ikke tilgængelig.</string>
     <string name="settings_terms_service">Brugsvilkår</string>
     <string name="external_open_uri_error_title">Fejl ved åbning af ekstern app</string>
+    <string name="settings_language_choose_language_voice_search_service_title">Stemme-søgningstjeneste</string>
+    <string name="settings_language_choose_language_voice_search_service_description">Vælg din foretrukne onlinetjeneste til stemme-søgning.</string>
+    <string name="language_service_options_reset">Nulstil indstillingerne for stemme-søgetjenesten</string>
+    <string name="external_open_uri_error_bad_uri_body">Ugyldig uri %1$s</string>
+    <string name="external_open_uri_error_security_exception_body">SecurityException ved start af hensigten for %1$s</string>
+    <string name="hvr_connect_glass_message">Tilslut din HUAWEI VR Glass for at bruge denne app</string>
+    <string name="privacy_dialog_title">Privatliv</string>
+    <string name="privacy_policy_subtitle_3">Lovvalg og original sprog</string>
+    <string name="voice_service_metkai">MeetKai</string>
+    <string name="privacy_dialog_message">Dit privatliv er vigtigt for os. For at kunne bruge browseren skal du acceptere vores servicevilkår og privatlivspolitik. Tak fordi du bruger Wolvic!</string>
+    <string name="privacy_policy_title">Generel privatlivspolitik</string>
+    <string name="voice_service_huawei_asr">Automatisk talegenkendelse fra Huawei (ASR)</string>
+    <string name="external_open_uri_error_no_activity_body">Ingen app fundet til at åbne %1$s</string>
+    <string name="privacy_policy_subtitle_2">Databeskyttelse</string>
+    <string name="privacy_policy_subtitle_1">Generelle oplysninger</string>
+    <string name="privacy_dialog_disagree">Luk Wolvic</string>
+    <string name="hvr_enter_vr">Gå ind i VR</string>
+    <string name="privacy_dialog_agree">Enig</string>
+    <string name="terms_service_subtitle_2">Wolvic Web-baserede Informationstjenester</string>
+    <string name="terms_service_title">Servicevilkår</string>
+    <string name="language_options_voice_search_service_title">Stemmesøgningstjeneste</string>
+    <string name="permissions_dialog_remember_choice">Husk denne beslutning</string>
+    <string name="hamburger_menu_save_web_app">Gem webapp…</string>
+    <string name="web_apps_loading">Indlæsning af webapps</string>
+    <string name="upload_button">Upload</string>
+    <string name="addons_experimental_section_title">Eksperimentelt</string>
+    <string name="web_apps_title">Web apps</string>
+    <string name="web_apps_description">Klik på knappen Gem webapp... når du er på en side for at tilføje den til dine webapps.</string>
+    <string name="web_apps_empty">Din webappliste er tom</string>
+    <string name="web_apps_dialog_title">Installer webapp</string>
+    <string name="web_apps_dialog_title_parameter">Installer %1$s</string>
+    <string name="web_apps_dialog_body">Vil du installere følgende webapp\? Den vil være tilgængelig i Apps-biblioteket.</string>
+    <string name="web_apps_dialog_install">Installer</string>
+    <string name="web_apps_dialog_cancel">Annuller</string>
+    <string name="web_apps_saved_notification">Web-app tilføjet!</string>
+    <string name="download_addon_install">Installer Addon</string>
+    <string name="download_addon_install_cancel">Annuller</string>
+    <string name="download_addon_install_confirm_install">Installer</string>
+    <string name="download_addon_install_blocked">Lokal addon-installation blokeret</string>
+    <string name="download_addon_install_blocked_body">Tillad lokal addon-installation i Udviklingsindstillinger for at fortsætte.</string>
+    <string name="notifications_loading">Indlæsning af notifikationer</string>
+    <string name="notifications_empty">Din notifikationsliste er tom</string>
+    <string name="notifications_title">Notifikationer</string>
+    <string name="fxa_account_options_device_name">Enhedsnavn</string>
+    <string name="move_tooltip">Flyt</string>
+    <string name="deprecated_version_dialog_store_button">Installer…</string>
+    <string name="rCN_first_launch_title">Meddelelse om brugeraftale og privatlivspolitik</string>
+    <string name="rCN_first_launch_clickable_privacy_text">Privatlivspolitik</string>
+    <string name="rCN_first_launch_agree">Enig</string>
+    <string name="rCN_first_launch_disagree">Uenig</string>
+    <string name="rCN_first_launch_confirmation_body">Hvis du vælger \"Uenig\", vil vi desværre ikke længere være i stand til at levere tjenester til dig.
+\n
+\nDu kan læse den komplette brugeraftale og privatlivspolitik.</string>
+    <string name="keyboardview_keycode_cancel">Annuller</string>
+    <string name="keyboardview_keycode_delete">Slet</string>
+    <string name="keyboardview_keycode_enter">Indtast</string>
+    <string name="tray_wifi_unavailable_ssid">SSID ikke tilgængelig</string>
+    <string name="user_feedback_tooltip">Del ideer og feedback</string>
+    <string name="upload_list_empty">Ingen filer tilgængelige til upload</string>
+    <string name="deprecated_version_dialog_info_button">Læs mere…</string>
+    <string name="deprecated_version_dialog_body">Denne \"App Lab\"-version af Wolvic vil blive fjernet ved udgangen af oktober 2023.
+\n
+\nInstaller venligst den nyeste version af Wolvic fra Meta Quest Store.
+\n
+\nVIGTIGT: Medmindre du bruger Sync, vil den nye Wolvic-app ikke have dine bogmærker og faner.</string>
+    <string name="developer_options_center_windows">Centrer vinduer vertikalt</string>
+    <string name="controller_options_haptic_feedback">Haptisk feedback</string>
+    <string name="security_options_permission_fine_location_warning">Wolvic kan kun få din omtrentlige placering. Dette kan ændres i systemindstillingerne.</string>
+    <string name="voice_input_start">Hvad vil du gerne have input til?</string>
+    <string name="device_name">%1$s på %2$s</string>
+    <string name="video_mode_3d_top_bottom">3D Top Bund</string>
+    <string name="hamburger_menu_toggle_passthrough">Passthrough</string>
+    <string name="rCN_first_launch_confirmation_agree">Enig og fortsæt</string>
+    <string name="rCN_first_launch_confirmation_disagree">Uenig og afslut</string>
+    <string name="terms_service_section_1">Wolvic er gratis og open source-software, bygget af et fællesskab af tusinder fra hele verden. Der er et par ting, du bør vide:
+\n
+\n\t- Wolvic stilles til rådighed for dig under betingelserne i Mozilla Public License. Det betyder, at du må bruge, kopiere og distribuere Wolvic til andre. Du er også velkommen til at ændre kildekoden til Wolvic, som du vil, for at opfylde dine behov. Mozilla Public License giver dig også ret til at distribuere dine modificerede versioner.
+\n
+\n\t- Du får ikke tildelt nogen varemærkerettigheder eller licenser til varemærker tilhørende Igalia eller nogen anden part, herunder uden begrænsning Wolvic-navnet eller -logoet.
+\n
+\n\t- Nogle funktioner i Wolvic, såsom Crash Reporter, giver dig mulighed for at give feedback til Igalia. Ved at vælge at indsende feedback giver du Igalia tilladelse til at bruge feedbacken til at forbedre sine produkter, til at offentliggøre anonymiseret feedback på sine hjemmesider og til at distribuere den anonymiserede feedback.
+\n
+\n\t- Hvordan vi bruger dine personlige oplysninger og feedback indsendt til Igalia gennem Wolvic, er beskrevet i Wolvics privatlivspolitik.
+\n
+\n\t- Nogle Wolvic-funktioner gør brug af webbaserede informationstjenester; vi kan dog ikke garantere, at de er 100 % nøjagtige eller fejlfri. Flere detaljer, herunder oplysninger om, hvordan du deaktiverer de funktioner, der bruger disse tjenester, kan findes i servicevilkårene (nedenfor).</string>
+    <string name="privacy_policy_section_1">Denne applikation er udviklet af Igalia, SL (herefter IGALIA), med hjemsted på Bugallal Marchesi, 22 - 1º, 15008, A Coruña, Galicia (Spanien), hvis kontaktoplysninger er:
+\n
+\n\t- Telefonnummer +34 981 913991;
+\n\t- E-mail: info@igalia.com
+\n
+\nIndholdet og elementerne, der udgør applikationen, er implementeret og/eller udviklet af IGALIA under open source-licenser og er beskyttet uden begrænsninger af lovgivningen om intellektuel og industriel ejendomsret i Kongeriget Spanien og af de internationale traktater og aftaler, der kan være resultatet af anvendelsen.</string>
+    <string name="keyboardview_keycode_done">Færdig</string>
+    <string name="privacy_policy_section_3">Denne fortrolighedspolitik er underlagt spansk lov. Privatlivspolitikkens sprog i denne applikation er spansk. Af denne grund vil enhver mulig afvigelse mellem den originale version på spansk og dens oversættelse til et andet sprog blive betragtet som fremherskende i den spanske version, der kan findes her: https://wolvic.com/es/legal/privacy/ .</string>
+    <string name="keyboardview_keycode_alt">Alt</string>
+    <string name="keyboardview_keycode_mode_change">Ændring af tilstand</string>
+    <string name="keyboardview_keycode_shift">Shift</string>
+    <string name="clear_user_data_dialog_title">Ryd %1$s brugerdata</string>
+    <string name="clear_user_data_dialog_text">%1$s vil blive nulstillet. Alle data, inklusive gemte logins, historik og bogmærker, vil blive slettet permanent, hvis de ikke er blevet synkroniseret. %1$s lukker automatisk, når nulstillingen er fuldført. Ønsker du at fortsætte?</string>
+    <string name="developer_options_clear_user_data_description">Alle brugerdata</string>
+    <string name="security_options_use_system_root_ca">Brug rodcertifikater, som systemet har tillid til</string>
+    <string name="rCN_first_launch_body">Velkommen til \"Wolvic\"!
+\n
+\nRegistrering og brug af \"Wolvic\" kræver, at du accepterer brugeraftalen og privatlivspolitikken, ellers kan vi ikke levere tjenester til dig. Læs venligst dokumenterne omhyggeligt og klik på \"Enig\" for at fortsætte. Hvis du klikker på \"Uenig\", vil du ikke kunne fortsætte med at bruge \"Wolvic\".
+\n
+\nDu kan læse den komplette brugeraftale og privatlivspolitik.</string>
+    <string name="rCN_first_launch_clickable_terms_text">Brugeraftale</string>
+    <string name="deprecated_version_dialog_title">Support slutter snart</string>
+    <string name="display_options_sound_effect">Brug lydeffekter</string>
+    <string name="display_options_latin_auto_complete">Automatisk udfyldning af latinsk tastaturinput</string>
+    <string name="display_options_head_lock">Aktivér hovedlås</string>
+    <string name="display_options_windows_distance">Windows Afstand</string>
+    <string name="experimental_features">Eksperimentelle funktioner</string>
+    <string name="display_options_start_with_passthrough">Start med Passthrough-tilstand</string>
+    <string name="new_tab">Nyt faneblad</string>
+    <string name="new_private_tab">Nyt privat faneblad</string>
+    <string name="close_tab">Luk faneblad</string>
 </resources>

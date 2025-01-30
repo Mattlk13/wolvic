@@ -38,6 +38,7 @@ public class TabsWidget extends UIDialog {
     protected UITextButton mSelectTabsButton;
     protected UITextButton mDoneButton;
     protected UITextButton mCloseTabsButton;
+    protected UITextButton mBookmarkTabsButton;
     protected UITextButton mCloseTabsAllButton;
     protected UITextButton mSelectAllButton;
     protected UITextButton mUnselectTabs;
@@ -46,12 +47,6 @@ public class TabsWidget extends UIDialog {
 
     protected boolean mSelecting;
     protected ArrayList<Session> mSelectedTabs = new ArrayList<>();
-
-    public interface TabDelegate {
-        void onTabSelect(Session aTab);
-        void onTabAdd();
-        void onTabsClose(List<Session> aTabs);
-    }
 
     public TabsWidget(Context aContext) {
         super(aContext);
@@ -65,13 +60,12 @@ public class TabsWidget extends UIDialog {
         aPlacement.width =  WidgetPlacement.dpDimension(getContext(), R.dimen.tabs_width);
         aPlacement.height = WidgetPlacement.dpDimension(getContext(), R.dimen.tabs_height);
         aPlacement.parentAnchorX = 0.5f;
-        aPlacement.parentAnchorY = 0.0f;
+        aPlacement.parentAnchorY = 1.0f;
         aPlacement.anchorX = 0.5f;
-        aPlacement.anchorY = 0.5f;
-        aPlacement.translationY = WidgetPlacement.unitFromMeters(getContext(), R.dimen.settings_world_y) -
-                WidgetPlacement.unitFromMeters(getContext(), R.dimen.window_world_y);
-        aPlacement.translationZ = WidgetPlacement.unitFromMeters(getContext(), R.dimen.settings_world_z) -
-                WidgetPlacement.unitFromMeters(getContext(), R.dimen.window_world_z);
+        aPlacement.anchorY = 0.0f;
+        // Undo the rotation of the parent widget (tray).
+        aPlacement.rotationAxisX = 1.0f;
+        aPlacement.rotation = (float) Math.toRadians(45);
     }
 
     private void initialize() {
@@ -123,6 +117,14 @@ public class TabsWidget extends UIDialog {
             onDismiss();
         });
 
+        mBookmarkTabsButton = findViewById(R.id.tabsBookmarkButton);
+        mBookmarkTabsButton.setOnClickListener(v -> {
+            if (mTabDelegate != null) {
+                mTabDelegate.onTabsBookmark(mSelectedTabs);
+            }
+            onDismiss();
+        });
+
         mCloseTabsAllButton = findViewById(R.id.tabsCloseAllButton);
         mCloseTabsAllButton.setOnClickListener(v -> {
             if (mTabDelegate != null) {
@@ -153,9 +155,8 @@ public class TabsWidget extends UIDialog {
         updateUI();
     }
 
-    public void attachToWindow(WindowWidget aWindow) {
-        mPrivateMode = aWindow.getSession().isPrivateMode();
-        mWidgetPlacement.parentHandle = aWindow.getHandle();
+    public void setPrivateMode(boolean privateMode) {
+        mPrivateMode = privateMode;
     }
 
     @Override
@@ -264,8 +265,8 @@ public class TabsWidget extends UIDialog {
                             aSender.attachToSession(latestTabs.get(0), mBitmapCache);
                             return;
                         }
-                        mTabs.remove(holder.getAdapterPosition() - 1);
-                        mAdapter.notifyItemRemoved(holder.getAdapterPosition());
+                        mTabs.remove(holder.getBindingAdapterPosition() - 1);
+                        mAdapter.notifyItemRemoved(holder.getBindingAdapterPosition());
                         updateTabCounter();
 
                     } else {
@@ -352,11 +353,13 @@ public class TabsWidget extends UIDialog {
         mTabsSelectModeView.setVisibility(mSelecting ? View.VISIBLE : View.GONE);
         if (mSelectedTabs.size() > 0) {
             mCloseTabsButton.setVisibility(View.VISIBLE);
+            mBookmarkTabsButton.setVisibility(View.VISIBLE);
             mUnselectTabs.setVisibility(View.VISIBLE);
             mCloseTabsAllButton.setVisibility(View.GONE);
             mSelectAllButton.setVisibility(View.GONE);
         } else {
             mCloseTabsButton.setVisibility(View.GONE);
+            mBookmarkTabsButton.setVisibility(View.GONE);
             mUnselectTabs.setVisibility(View.GONE);
             mCloseTabsAllButton.setVisibility(View.VISIBLE);
             mSelectAllButton.setVisibility(View.VISIBLE);
@@ -377,6 +380,9 @@ public class TabsWidget extends UIDialog {
     protected void onDismiss() {
         exitSelectMode();
         hide(KEEP_WIDGET);
+        if (mDelegate != null) {
+            mDelegate.onDismiss();
+        }
     }
 
     public class GridSpacingItemDecoration extends RecyclerView.ItemDecoration {

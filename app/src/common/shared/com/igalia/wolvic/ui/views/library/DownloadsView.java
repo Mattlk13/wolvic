@@ -5,10 +5,12 @@
 
 package com.igalia.wolvic.ui.views.library;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.PointF;
 import android.graphics.Rect;
+import android.os.Build;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -39,11 +41,15 @@ import com.igalia.wolvic.ui.widgets.dialogs.PromptDialogWidget;
 import com.igalia.wolvic.ui.widgets.menus.library.DownloadsContextMenuWidget;
 import com.igalia.wolvic.ui.widgets.menus.library.LibraryContextMenuWidget;
 import com.igalia.wolvic.ui.widgets.menus.library.SortingContextMenuWidget;
+import com.igalia.wolvic.utils.DeviceType;
 import com.igalia.wolvic.utils.SystemUtils;
+import com.igalia.wolvic.browser.extensions.LocalExtension;
+import com.igalia.wolvic.utils.UrlUtils;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.UUID;
 
 public class DownloadsView extends LibraryView implements DownloadsManager.DownloadsListener {
 
@@ -54,6 +60,7 @@ public class DownloadsView extends LibraryView implements DownloadsManager.Downl
     private DownloadsManager mDownloadsManager;
     private Comparator<Download> mSortingComparator;
     private DownloadsViewModel mViewModel;
+    private List<Download> mCachedDownloadItems;
 
     public DownloadsView(Context aContext, @NonNull LibraryPanel delegate) {
         super(aContext, delegate);
@@ -95,8 +102,11 @@ public class DownloadsView extends LibraryView implements DownloadsManager.Downl
         mBinding.downloadsList.addOnScrollListener(mScrollListener);
         mBinding.downloadsList.setHasFixedSize(true);
         mBinding.downloadsList.setItemViewCacheSize(20);
-        mBinding.downloadsList.setDrawingCacheEnabled(true);
-        mBinding.downloadsList.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
+        // Drawing Cache is deprecated in API level 28: https://developer.android.com/reference/android/view/View#getDrawingCache().
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+            mBinding.downloadsList.setDrawingCacheEnabled(true);
+            mBinding.downloadsList.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
+        }
 
         mViewModel.setIsEmpty(true);
         mViewModel.setIsLoading(true);
@@ -113,6 +123,22 @@ public class DownloadsView extends LibraryView implements DownloadsManager.Downl
     @Override
     public void onDestroy() {
         mBinding.downloadsList.removeOnScrollListener(mScrollListener);
+    }
+
+    @Override
+    public boolean supportsSearch() {
+        return true;
+    }
+
+    @Override
+    public void updateSearchFilter(String searchFilter) {
+        setSearchFilter(searchFilter);
+
+        if (mCachedDownloadItems == null) {
+            onDownloadsUpdate(mDownloadsManager.getDownloads());
+        } else {
+            onDownloadsUpdate(mCachedDownloadItems);
+        }
     }
 
     @Override
@@ -136,10 +162,51 @@ public class DownloadsView extends LibraryView implements DownloadsManager.Downl
         public void onClick(@NonNull View view, @NonNull Download item) {
             mBinding.downloadsList.requestFocusFromTouch();
 
-            SessionStore.get().getActiveSession().loadUri(item.getOutputFileUri());
+            if (item.getMediaType().equals(UrlUtils.EXTENSION_MIME_TYPE)) {
+                if (SettingsStore.getInstance(getContext()).isLocalAddonAllowed()) {
+                    // Meta Horizon OS does not require any special permission. See
+                    // https://developers.meta.com/horizon/resources/permissions-review-required/
+                    boolean isPermissionGranted = DeviceType.isOculusBuild() ||
+                            mWidgetManager.isPermissionGranted(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+                    if (isPermissionGranted) {
+                        mWidgetManager.getFocusedWindow().showConfirmPrompt(
+                                getContext().getString(R.string.download_addon_install),
+                                item.getFilename(),
+                                new String[]{
+                                        getContext().getString(R.string.download_addon_install_cancel),
+                                        getContext().getString(R.string.download_addon_install_confirm_install),
+                                },
+                                (index, isChecked) -> {
+                                    if (index == PromptDialogWidget.POSITIVE) {
+                                        LocalExtension.install(
+                                                SessionStore.get().getWebExtensionRuntime(),
+                                                UUID.randomUUID().toString(),
+                                                item.getOutputFileUriAsString(),
+                                                ((VRBrowserActivity) getContext()).getServicesProvider().getAddons()
+                                        );
+                                    }
+                                }
+                        );
+                        } else {
+                            mWidgetManager.getFocusedWindow().showAlert(
+                                    getContext().getString(R.string.download_addon_install_blocked),
+                                    getContext().getString(R.string.download_addon_install_blocked_permissions_body),
+                                    null
+                            );
+                        }
+                } else {
+                    mWidgetManager.getFocusedWindow().showAlert(
+                            getContext().getString(R.string.download_addon_install_blocked),
+                            getContext().getString(R.string.download_addon_install_blocked_body),
+                            null
+                    );
+                }
+            } else {
+                SessionStore.get().getActiveSession().loadUri(item.getOutputFileUriAsString());
 
-            WindowWidget window = mWidgetManager.getFocusedWindow();
-            window.hidePanel();
+                WindowWidget window = mWidgetManager.getFocusedWindow();
+                window.hidePanel();
+            }
         }
 
         @Override
@@ -214,7 +281,7 @@ public class DownloadsView extends LibraryView implements DownloadsManager.Downl
                     view,
                     new DownloadsContextMenuWidget(getContext(),
                             new DownloadsContextMenuWidget.DownloadsContextMenuItem(
-                                    item.getOutputFileUri(),
+                                    item.getOutputFileUriAsString(),
                                     item.getTitle(),
                                     item.getId()),
                             mWidgetManager.canOpenNewWindow()),
@@ -389,6 +456,8 @@ public class DownloadsView extends LibraryView implements DownloadsManager.Downl
 
     @Override
     public void onDownloadsUpdate(@NonNull List<Download> downloads) {
+        mCachedDownloadItems = downloads;
+
         if (downloads.size() == 0) {
             mViewModel.setIsEmpty(true);
             mViewModel.setIsLoading(false);
@@ -396,10 +465,22 @@ public class DownloadsView extends LibraryView implements DownloadsManager.Downl
         } else {
             mViewModel.setIsEmpty(false);
             mViewModel.setIsLoading(false);
-            List<Download> sorted = downloads.stream().sorted(mSortingComparator).collect(Collectors.toList());
-            mDownloadsAdapter.setDownloadsList(sorted);
-        }
 
+            // Search by filtering the cached list.
+            if (getSearchFilter().isEmpty()) {
+                mDownloadsAdapter.setDownloadsList(downloads);
+            } else {
+                List<Download> filteredDownloads = downloads.stream()
+                        .filter(value -> {
+                            if (value.getTitle() != null && !getSearchFilter().isEmpty()) {
+                                return value.getTitle().toLowerCase().contains(getSearchFilter());
+                            }
+                            return true;
+                        })
+                        .sorted(mSortingComparator).collect(Collectors.toList());
+                mDownloadsAdapter.setDownloadsList(filteredDownloads);
+            }
+        }
         mBinding.executePendingBindings();
     }
 

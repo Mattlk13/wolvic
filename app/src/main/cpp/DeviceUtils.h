@@ -8,12 +8,18 @@
 
 #include "vrb/MacroUtils.h"
 #include "vrb/Forward.h"
+#include "vrb/Geometry.h"
+#include "Device.h"
+
+#include <unordered_map>
 
 namespace crow {
 
 class DeviceUtils {
 public:
   static vrb::Matrix CalculateReorientationMatrix(const vrb::Matrix& aHeadTransform, const vrb::Vector& aHeightPosition);
+  static vrb::Matrix CalculateReorientationMatrixOnHeadLock(const vrb::Matrix& aHeadTransform, const vrb::Vector& aHeightPosition);
+  static vrb::Matrix CalculateReorientationMatrixWithoutRoll(const vrb::Matrix& aHeadTransform, const vrb::Vector& aHeightPosition);
   static void GetTargetImmersiveSize(const uint32_t aRequestedWidth, const uint32_t  aRequestedHeight,
                                      const uint32_t aRecommendedWidth, const uint32_t aRecommendedHeight,
                                      uint32_t& aTargetWidth, uint32_t& aTargetHeight) {
@@ -24,7 +30,13 @@ public:
                                      const uint32_t aRecommendedWidth, const uint32_t aRecommendedHeight,
                                      const uint32_t aMaxWidth, const uint32_t aMaxHeight,
                                      uint32_t& aTargetWidth, uint32_t& aTargetHeight);
+  static vrb::GeometryPtr GetSphereGeometry(vrb::CreationContextPtr& context, uint32_t resolution, float radius);
+  static device::DeviceType GetDeviceTypeFromSystem();
+
 private:
+  static vrb::Matrix CalculateReorientationMatrixWithThreshold(const vrb::Matrix& aHeadTransform, const vrb::Vector& aHeightPosition,
+                                                               const float kPitchUpThreshold, const float kPitchDownThreshold, const float kRollThreshold);
+  static std::unordered_map<std::string, device::DeviceType> deviceNamesMap;
   VRB_NO_DEFAULTS(DeviceUtils)
 };
 

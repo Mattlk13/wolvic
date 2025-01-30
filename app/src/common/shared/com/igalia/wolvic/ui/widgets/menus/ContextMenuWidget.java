@@ -6,6 +6,7 @@
 package com.igalia.wolvic.ui.widgets.menus;
 
 import android.content.ClipData;
+import android.content.ClipDescription;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.res.Configuration;
@@ -100,7 +101,7 @@ public class ContextMenuWidget extends MenuWidget {
             // Open link in a new tab
             mItems.add(new MenuWidget.MenuItem(getContext().getString(R.string.context_menu_open_link_new_tab_1), 0, () -> {
                 if (!StringUtils.isEmpty(aContextElement.linkUri)) {
-                    widgetManager.openNewTab(aContextElement.linkUri);
+                    widgetManager.openNewTabForeground(aContextElement.linkUri);
                     TelemetryService.Tabs.openedCounter(TelemetryService.Tabs.TabSource.CONTEXT_MENU);
                 }
                 onDismiss();
@@ -129,7 +130,11 @@ public class ContextMenuWidget extends MenuWidget {
                     if (StringUtils.isEmpty(label)) {
                         label = uri.toString();
                     }
-                    ClipData clip = ClipData.newRawUri(label, uri);
+                    // The clip data contains the URI in two formats: as an URI and as plain text.
+                    ClipData clip = new ClipData(label,
+                            new String[]{ClipDescription.MIMETYPE_TEXT_URILIST, ClipDescription.MIMETYPE_TEXT_PLAIN},
+                            new ClipData.Item(uri));
+                    clip.addItem(new ClipData.Item(uri.toString()));
                     if (clipboard != null) {
                         clipboard.setPrimaryClip(clip);
                     }

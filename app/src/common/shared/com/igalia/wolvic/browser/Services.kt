@@ -8,6 +8,7 @@ package com.igalia.wolvic.browser
 import android.content.Context
 import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.igalia.wolvic.BuildConfig
 import com.igalia.wolvic.R
@@ -23,7 +24,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import mozilla.appservices.Megazord
-import mozilla.appservices.rustlog.LogAdapterCannotEnable
+import mozilla.appservices.fxaclient.FxaServer
 import mozilla.components.concept.sync.*
 import mozilla.components.service.fxa.*
 import mozilla.components.service.fxa.manager.FxaAccountManager
@@ -54,7 +55,7 @@ class Services(val context: Context, places: Places): WSession.NavigationDelegat
         Megazord.init()
         try {
             RustLog.enable()
-        } catch (e: LogAdapterCannotEnable) {
+        } catch (e: UnsatisfiedLinkError) {
             android.util.Log.w(LOGTAG, "RustLog has been enabled.")
         }
         RustHttpConfig.setClient(lazy { EngineProvider.createClient(context) })
@@ -85,15 +86,15 @@ class Services(val context: Context, places: Places): WSession.NavigationDelegat
             }
         }
     }
-    val serverConfig = ServerConfig(if (BuildConfig.FXA_USE_CHINA_SERVER) Server.CHINA else Server.RELEASE, CLIENT_ID, REDIRECT_URL)
+    val serverConfig = ServerConfig(if (BuildConfig.FXA_USE_CHINA_SERVER) FxaServer.China else FxaServer.Release, CLIENT_ID, REDIRECT_URL)
 
     val accountManager = FxaAccountManager(
         context = context,
         serverConfig = serverConfig,
         deviceConfig = DeviceConfig(
             // This is a default name, and can be changed once user is logged in.
-            // E.g. accountManager.authenticatedAccount()?.deviceConstellation()?.setDeviceNameAsync("new name")
-            name = "${context.getString(R.string.app_name)} on ${Build.MANUFACTURER} ${Build.MODEL}",
+            // E.g. accountManager.authenticatedAccount()?.deviceConstellation()?.setDeviceName("new name", context)
+            name = com.igalia.wolvic.utils.DeviceType.getDeviceName(context),
             type = DeviceType.VR,
             capabilities = setOf(DeviceCapability.SEND_TAB)
         ),
@@ -139,7 +140,7 @@ class Services(val context: Context, places: Places): WSession.NavigationDelegat
                         wResult.complete(WAllowOrDeny.DENY)
 
                     } else {
-                        android.util.Log.e(LOGTAG, "Authentication successfully completed.")
+                        android.util.Log.d(LOGTAG, "Authentication successfully completed.")
                         wResult.complete(WAllowOrDeny.ALLOW)
                     }
                 }

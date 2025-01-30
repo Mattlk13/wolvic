@@ -100,6 +100,18 @@ public class Media implements WMediaSession.Delegate {
        }
     }
 
+    public void seekForward() {
+        if (mMediaSession != null) {
+            mMediaSession.seekForward();
+        }
+    }
+
+    public void seekBackward() {
+        if (mMediaSession != null) {
+            mMediaSession.seekBackward();
+        }
+    }
+
     public void play() {
         if (mMediaSession != null) {
             mMediaSession.play();
@@ -116,9 +128,14 @@ public class Media implements WMediaSession.Delegate {
         // TODO: mMediaSession doesn't seem to have a way to set volume. Should we change system volume instead?
     }
 
+    public boolean canCtrlVolume() {
+        return mMediaSession != null && mMediaSession.canCtrlVolume();
+    }
+
     public void setMuted(boolean aIsMuted) {
         if (mMediaSession != null) {
             mMediaSession.muteAudio(aIsMuted);
+            mIsMuted = aIsMuted;
         }
     }
 
@@ -131,8 +148,8 @@ public class Media implements WMediaSession.Delegate {
     }
 
     public void skipAd() {
-        if (canSkipAd()) {
-            skipAd();
+        if (canSkipAd() && mMediaSession != null) {
+            mMediaSession.skipAd();
         }
     }
 

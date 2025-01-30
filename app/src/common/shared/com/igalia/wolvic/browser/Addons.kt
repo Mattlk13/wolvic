@@ -7,6 +7,7 @@ import android.graphics.drawable.Drawable
 import android.os.Handler
 import android.os.Looper
 import androidx.appcompat.content.res.AppCompatResources
+import androidx.core.app.NotificationManagerCompat
 import com.igalia.wolvic.BuildConfig
 import com.igalia.wolvic.R
 import com.igalia.wolvic.browser.adapter.ComponentsAdapter
@@ -20,18 +21,22 @@ import com.igalia.wolvic.ui.widgets.WidgetManagerDelegate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.future.await
 import kotlinx.coroutines.future.future
 import mozilla.components.concept.engine.CancellableOperation
 import mozilla.components.concept.engine.webextension.Action
 import mozilla.components.concept.engine.webextension.EnableSource
+import mozilla.components.concept.engine.webextension.InstallationMethod
 import mozilla.components.feature.addons.Addon
 import mozilla.components.feature.addons.AddonManager
-import mozilla.components.feature.addons.amo.AddonCollectionProvider
-import mozilla.components.feature.addons.update.AddonUpdater
+import mozilla.components.feature.addons.amo.AMOAddonsProvider
 import mozilla.components.feature.addons.update.DefaultAddonUpdater
 import mozilla.components.feature.addons.update.GlobalAddonDependencyProvider
+import mozilla.components.support.base.android.NotificationsDelegate
 import mozilla.components.support.base.log.logger.Logger
+import mozilla.components.support.base.worker.Frequency
 import mozilla.components.support.webextensions.WebExtensionSupport
+import mozilla.components.support.webextensions.WebExtensionSupport.installedExtensions
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
@@ -48,14 +53,14 @@ class Addons(val context: Context, private val sessionStore: SessionStore) {
 
     val addonCollectionProvider by lazy {
         if (BuildConfig.AMO_COLLECTION.isNotEmpty()) {
-            AddonCollectionProvider(
+            AMOAddonsProvider(
                     context,
                     EngineProvider.getDefaultClient(context),
                     collectionName = BuildConfig.AMO_COLLECTION,
                     maxCacheAgeInMinutes = DAY_IN_MINUTES
             )
         } else {
-            AddonCollectionProvider(
+            AMOAddonsProvider(
                     context,
                     EngineProvider.getDefaultClient(context),
                     maxCacheAgeInMinutes = DAY_IN_MINUTES)
@@ -64,7 +69,9 @@ class Addons(val context: Context, private val sessionStore: SessionStore) {
 
     @Suppress("MagicNumber")
     private val addonUpdater by lazy {
-        DefaultAddonUpdater(context, AddonUpdater.Frequency(12, TimeUnit.HOURS))
+        DefaultAddonUpdater(context, Frequency(12, TimeUnit.HOURS), NotificationsDelegate(
+            NotificationManagerCompat.from(context))
+        )
     }
 
     private val addonManager by lazy {
@@ -134,14 +141,16 @@ class Addons(val context: Context, private val sessionStore: SessionStore) {
 
     fun installAddon(addon: Addon,
                      onSuccess: ((Addon) -> Unit) = { },
-                     onError: ((String, Throwable) -> Unit) = { _, _ -> }): CancellableOperation {
-        return addonManager.installAddon(addon, { addon1: Addon ->
-            onSuccess.invoke(addon1)
-            notifyListeners()
-
-        }, { s: String, throwable: Throwable ->
-            onError.invoke(s, throwable)
-        })
+                     onError: ((Throwable) -> Unit) = { _ -> }): CancellableOperation {
+        return addonManager.installAddon(addon.downloadUrl,
+            InstallationMethod.MANAGER,
+            { addon1: Addon ->
+                onSuccess.invoke(addon1)
+                notifyListeners()
+            },
+            { throwable: Throwable ->
+                onError.invoke(throwable)
+            })
     }
 
     fun uninstallAddon(addon: Addon,
@@ -195,7 +204,7 @@ class Addons(val context: Context, private val sessionStore: SessionStore) {
         })
     }
 
-    private fun notifyListeners() {
+    fun notifyListeners() {
         if (listeners.size > 0) {
             val listenersCopy = ArrayList(listeners)
             Handler(Looper.getMainLooper()).post {
@@ -206,10 +215,25 @@ class Addons(val context: Context, private val sessionStore: SessionStore) {
         }
     }
 
-    fun getAddons(waitForPendingActions: Boolean = true): CompletableFuture<List<Addon>> =
-            GlobalScope.future {
-                addonManager.getAddons(waitForPendingActions)
+    fun getAddons(waitForPendingActions: Boolean = true): CompletableFuture<List<Addon>> = GlobalScope.future {
+        val addons = addonManager.getAddons(waitForPendingActions).toMutableList()
+        // Set the correct enabled state and icon for unsupported addons
+        for (i in addons.indices) {
+            if (!addons[i].isSupported()) {
+                val enabled = installedExtensions[addons[i].id]?.isEnabled() ?: false
+                val icon = CoroutineScope(Dispatchers.Main).future {
+                    try {
+                        installedExtensions[addons[i].id]?.loadIcon(AddonManager.ADDON_ICON_SIZE)
+                    } catch (throwable: Throwable) {
+                        Logger.warn("Failed to load addon icon.", throwable)
+                        null
+                    }
+                }.await()
+                addons[i] = addons[i].copy(installedState = addons[i].installedState?.copy(enabled = enabled, icon = icon))
             }
+        }
+        addons.toList()
+    }
 
     companion object {
         fun loadActionIcon(context: Context, action: Action, height: Int): CompletableFuture<Drawable?> =

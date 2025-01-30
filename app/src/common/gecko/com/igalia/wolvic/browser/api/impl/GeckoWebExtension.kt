@@ -11,6 +11,7 @@ import com.igalia.wolvic.browser.api.impl.SessionImpl
 import com.igalia.wolvic.browser.engine.Session
 import com.igalia.wolvic.browser.engine.SessionStore
 import mozilla.components.concept.engine.EngineSession
+import mozilla.components.concept.engine.Settings
 import mozilla.components.concept.engine.webextension.*
 import mozilla.components.support.base.log.logger.Logger
 import org.json.JSONObject
@@ -241,7 +242,7 @@ class GeckoWebExtension(
     /**
      * See [WebExtension.registerTabHandler].
      */
-    override fun registerTabHandler(tabHandler: TabHandler) {
+    override fun registerTabHandler(tabHandler: TabHandler, defaultSettings: Settings?) {
 
         val tabDelegate = object : GeckoNativeWebExtension.TabDelegate {
 
@@ -266,9 +267,9 @@ class GeckoWebExtension(
                 val activeSession: Session = SessionStore.get().activeSession;
                 val session: Session = SessionStore.get().createWebExtensionSession(false, activeSession.isPrivateMode);
                 session.setParentSession(activeSession)
-                session.uaMode = GeckoSessionSettings.USER_AGENT_MODE_DESKTOP
+                session.setUaMode(GeckoSessionSettings.USER_AGENT_MODE_DESKTOP, true)
                 val geckoEngineSession = WolvicEngineSession(session)
-                ext.metaData?.optionsPageUrl?.let { optionsPageUrl ->
+                ext.metaData.optionsPageUrl?.let { optionsPageUrl ->
                     tabHandler.onNewTab(
                             this@GeckoWebExtension,
                             geckoEngineSession,
@@ -341,20 +342,34 @@ class GeckoWebExtension(
      */
     override fun getMetadata(): Metadata {
         return nativeExtension.metaData.let {
-            Metadata(
+            mozilla.components.concept.engine.webextension.Metadata(
                     name = it.name,
                     description = it.description,
                     developerName = it.creatorName,
                     developerUrl = it.creatorUrl,
-                    homePageUrl = it.homepageUrl,
+                    homepageUrl = it.homepageUrl,
                     version = it.version,
-                    permissions = it.permissions.toList(),
+                    requiredPermissions = it.requiredPermissions.toList(),
                     // Origins is marked as @NonNull but may be null: https://bugzilla.mozilla.org/show_bug.cgi?id=1629957
-                    hostPermissions = it.origins.orEmpty().toList(),
+                    requiredOrigins = it.requiredOrigins.orEmpty().toList(),
+                    optionalPermissions = it.optionalPermissions.toList(),
+                    grantedOptionalPermissions = it.grantedOptionalPermissions.toList(),
+                    grantedOptionalOrigins = it.grantedOptionalOrigins.toList(),
+                    optionalOrigins = it.optionalOrigins.toList(),
                     disabledFlags = DisabledFlags.select(it.disabledFlags),
                     optionsPageUrl = it.optionsPageUrl,
                     openOptionsPageInTab = it.openOptionsPageInTab,
-                    baseUrl = it.baseUrl
+                    baseUrl = it.baseUrl,
+                    averageRating = it.averageRating.toFloat(),
+                    creatorName = it.creatorName,
+                    creatorUrl = it.creatorUrl,
+                    detailUrl = it.homepageUrl,
+                    downloadUrl = it.downloadUrl,
+                    fullDescription = it.fullDescription,
+                    reviewCount = it.reviewCount,
+                    reviewUrl = it.reviewUrl,
+                    updateDate = it.updateDate,
+                    incognito = Incognito.fromString(it.incognito),
             )
         }
     }

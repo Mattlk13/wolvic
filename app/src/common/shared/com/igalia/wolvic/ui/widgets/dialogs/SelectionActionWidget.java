@@ -20,6 +20,7 @@ import com.igalia.wolvic.ui.views.UITextButton;
 import com.igalia.wolvic.ui.widgets.UIWidget;
 import com.igalia.wolvic.ui.widgets.WidgetManagerDelegate;
 import com.igalia.wolvic.ui.widgets.WidgetPlacement;
+import com.igalia.wolvic.ui.widgets.WindowWidget;
 import com.igalia.wolvic.utils.UrlUtils;
 import com.igalia.wolvic.utils.ViewUtils;
 
@@ -152,11 +153,13 @@ public class SelectionActionWidget extends UIWidget implements WidgetManagerDele
                     WSession.SelectionActionDelegate.ACTION_SELECT_ALL, this::handleAction));
         }
 
-        if (mSelectionText != null && !mSelectionText.trim().isEmpty()) {
+        // Contextual search is disabled in kiosk mode.
+        if (!mWidgetManager.getWindows().getFocusedWindow().isKioskMode() &&
+                mSelectionText != null && !mSelectionText.trim().isEmpty()) {
             buttons.add(createButton(
                     getContext().getString(
                             R.string.context_menu_web_search,
-                            SearchEngineWrapper.get(getContext()).getCurrentSearchEngine().getName()),
+                            SearchEngineWrapper.get(getContext()).resolveCurrentSearchEngine().getName()),
                     ACTION_WEB_SEARCH,
                     this::handleAction));
         }
@@ -217,9 +220,10 @@ public class SelectionActionWidget extends UIWidget implements WidgetManagerDele
     private void handleAction(View sender) {
         String action = (String)sender.getTag();
         if (action.equals(ACTION_WEB_SEARCH) && mSelectionText != null) {
+            WindowWidget focusedWindow = mWidgetManager.getWindows().getFocusedWindow();
             mWidgetManager.getWindows().addTab(
-                    mWidgetManager.getWindows().getFocusedWindow(),
-                    UrlUtils.urlForText(getContext(), mSelectionText));
+                    focusedWindow,
+                    UrlUtils.urlForText(getContext(), mSelectionText, focusedWindow.getSession().getWSession().getUrlUtilsVisitor()));
         }
 
         if (mDelegate != null) {

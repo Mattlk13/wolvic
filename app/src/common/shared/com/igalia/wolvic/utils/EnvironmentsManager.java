@@ -1,12 +1,12 @@
 package com.igalia.wolvic.utils;
 
-import android.app.DownloadManager;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.preference.PreferenceManager;
 
 import com.igalia.wolvic.R;
 import com.igalia.wolvic.browser.SettingsStore;
@@ -17,7 +17,7 @@ import com.igalia.wolvic.ui.widgets.WidgetManagerDelegate;
 import com.igalia.wolvic.utils.zip.UnzipCallback;
 import com.igalia.wolvic.utils.zip.UnzipTask;
 
-import java.io.File;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,6 +27,8 @@ public class EnvironmentsManager implements DownloadsManager.DownloadsListener, 
         default void onEnvironmentSetSuccess(@NonNull String envId) {}
         default void onEnvironmentSetError(@NonNull String error) {}
     }
+
+    static final String LOGTAG = SystemUtils.createLogtag(EnvironmentsManager.class);
 
     private WidgetManagerDelegate mApplicationDelegate;
     private Context mContext;
@@ -81,7 +83,6 @@ public class EnvironmentsManager implements DownloadsManager.DownloadsListener, 
                 SettingsStore.getInstance(mContext).setEnvironment(envId);
                 mListeners.forEach(environmentListener -> environmentListener.onEnvironmentSetSuccess(envId));
                 mApplicationDelegate.updateEnvironment();
-
             } else {
                 downloadEnvironment(envId);
             }
@@ -114,21 +115,41 @@ public class EnvironmentsManager implements DownloadsManager.DownloadsListener, 
 
     private void downloadEnvironment(@NonNull String envId) {
         final Environment environment = EnvironmentUtils.getExternalEnvironmentById(mContext, envId);
-        if (environment != null) {
-            // Check if the env is being downloaded
-            boolean isDownloading = mDownloadManager.getDownloads().stream()
-                    .filter(item ->
-                            item.getStatus() == DownloadManager.STATUS_RUNNING &&
-                                    item.getStatus() == DownloadManager.STATUS_PAUSED &&
-                                    item.getStatus() == DownloadManager.STATUS_PENDING &&
-                                    item.getUri().equals(environment.getPayload()))
-                    .findFirst().orElse(null) != null;
+        if (environment == null) {
+            return;
+        }
 
-            if (!isDownloading) {
-                // If the env is not being downloaded, start downloading it
-                DownloadJob job = DownloadJob.create(environment.getPayload());
-                mDownloadManager.startDownload(job);
-            }
+        final String payload = EnvironmentUtils.getEnvironmentPayload(environment);
+        try {
+            new URL(payload).toURI();
+        } catch (Exception e) {
+            Log.e(LOGTAG, "Invalid URI in payload for environment " + envId + ": " + e.getMessage());
+            return;
+        }
+    
+        // Check if the env is being downloaded or has been already downloaded.
+        // The download item will be removed in 2 situations:
+        //   1- the user selects another env before the download is completed (see setOrDownloadEnvironment)
+        //   2- when the unzip task is completed successfully.
+        Download envItem = mDownloadManager.getDownloads().stream()
+                .filter(item -> item.getUri().equals(payload))
+                .findFirst().orElse(null);
+
+        if (envItem == null) {
+            // If the env has not been downloaded, start downloading it
+            String outputPath = mContext.getExternalFilesDir(null).getAbsolutePath();
+            DownloadJob job = DownloadJob.create(payload);
+            job.setOutputPath(outputPath + "/" + job.getFilename());
+            mDownloadManager.startDownload(job);
+        } else if (envItem.getStatus() == Download.SUCCESSFUL) {
+            Log.w(LOGTAG, "The unzip task failed for unknown reasons");
+            mEnvDownloadId = -1;
+            mDownloadManager.removeDownload(envItem.getId(), true);
+        } else  {
+            // The 'downloadEnvironment' method is called either by 'setOrDownloadEnvironment' when the user changes the selected
+            // option in the radiobuttons widget (this cause the download item to be removed) or by the 'setOrDownloadEnvironment'
+            // method during the java initialization invoked by the VRBrowser native code.
+            Log.w(LOGTAG, "Download is still in progress; we shouldn't reach this code.");
         }
     }
 
@@ -145,12 +166,15 @@ public class EnvironmentsManager implements DownloadsManager.DownloadsListener, 
 
     @Override
     public void onDownloadCompleted(@NonNull Download download) {
+        assert download.getStatus() == Download.SUCCESSFUL;
+        if (download.getOutputFile() == null) {
+            Log.w(LOGTAG, "Failed to download URI, missing input stream: " + download.getUri());
+            return;
+        }
         Environment env = EnvironmentUtils.getExternalEnvironmentByPayload(mContext, download.getUri());
         if (env != null) {
             mEnvDownloadId = -1;
 
-            // We don't want the download to be left in the downloads list, so we just remove it when the download is done.
-            mDownloadManager.removeDownload(download.getId(), false);
             UnzipTask unzip = new UnzipTask(mContext);
             unzip.addListener(new UnzipCallback() {
                 @Override
@@ -165,14 +189,14 @@ public class EnvironmentsManager implements DownloadsManager.DownloadsListener, 
 
                 @Override
                 public void onUnzipFinish(@NonNull String zipFile, @NonNull String outputPath) {
-                    // Delete the zip file when the unzipping is done.
-                    File file = new File(zipFile);
-                    file.delete();
+                    // We don't want the download to be left in the downloads list, but we wait until the unzip task is completed to remove it.
+                    mDownloadManager.removeDownload(download.getId(), true);
 
                     // the environment is ready, call native to update the current env.
                     SettingsStore.getInstance(mContext).setEnvironment(env.getValue());
                     mListeners.forEach(environmentListener -> environmentListener.onEnvironmentSetSuccess(env.getValue()));
                     mApplicationDelegate.updateEnvironment();
+
                 }
 
                 @Override
@@ -191,7 +215,7 @@ public class EnvironmentsManager implements DownloadsManager.DownloadsListener, 
             });
             String zipOutputPath = EnvironmentUtils.getEnvPath(mContext, env.getValue());
             if (zipOutputPath != null) {
-                unzip.start(download.getOutputFilePath(), zipOutputPath);
+                unzip.start(download.getOutputFile().getPath(), zipOutputPath);
             }
         }
     }

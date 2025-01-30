@@ -15,6 +15,7 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.igalia.wolvic.R
 import com.igalia.wolvic.VRBrowserApplication
 import com.igalia.wolvic.telemetry.TelemetryService
+import com.igalia.wolvic.telemetry.TelemetryService.FxA
 import com.igalia.wolvic.utils.BitmapCache
 import com.igalia.wolvic.utils.SystemUtils
 import com.igalia.wolvic.utils.ViewUtils
@@ -22,6 +23,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.future.future
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import mozilla.components.concept.sync.*
 import mozilla.components.service.fxa.FirefoxAccount
 import mozilla.components.service.fxa.SyncEngine
@@ -130,8 +132,16 @@ class Accounts constructor(val context: Context) {
 
             accountStatus = AccountStatus.SIGNED_IN
 
+            // We must delay applying the device name from settings after we are authenticated
+            // as we will stuck if we get it directly when initializing services.accountManager
+            runBlocking { setDeviceName(SettingsStore.getInstance(context).deviceName) }
+
             // Enable syncing after signing in
-            syncNowAsync(SyncReason.EngineChange, true)
+            syncNowAsync(SyncReason.EngineChange, true)?.thenRun {
+                accountProfile()?.email?.let {
+                    SettingsStore.getInstance(context).setFxALastSync(it, getLastSynced(context))
+                }
+            }
 
             Handler(Looper.getMainLooper()).post {
                 // Update device list
@@ -191,13 +201,26 @@ class Accounts constructor(val context: Context) {
 
             loadProfilePicture(profile)
         }
+
+        override fun onFlowError(error: AuthFlowError) {
+            Log.w(LOGTAG, "Error during authentication or migration flow: $error.")
+            super.onFlowError(error)
+        }
+
+        override fun onReady(authenticatedAccount: OAuthAccount?) {
+            Log.d(LOGTAG, "Account state has been resolved and is now ready.")
+            super.onReady(authenticatedAccount)
+            accountProfile()?.email?.let {
+                SettingsStore.getInstance(context).setFxALastSync(it, getLastSynced(context))
+            }
+        }
     }
 
     init {
+        services.accountManager.register(accountObserver)
         services.accountManager.registerForSyncEvents(
                 syncStatusObserver, ProcessLifecycleOwner.get(), false
         )
-        services.accountManager.register(accountObserver)
         accountStatus = if (services.accountManager.authenticatedAccount() != null) {
             if (services.accountManager.accountNeedsReauth()) {
                 AccountStatus.NEEDS_RECONNECT
@@ -294,7 +317,7 @@ class Accounts constructor(val context: Context) {
     fun authUrlAsync(): CompletableFuture<String?>? {
         TelemetryService.FxA.signIn()
         return CoroutineScope(Dispatchers.Main).future {
-            services.accountManager.beginAuthentication()
+            services.accountManager.beginAuthentication(null, FxA())
         }
     }
 
@@ -312,7 +335,7 @@ class Accounts constructor(val context: Context) {
 
     fun updateProfileAsync(): CompletableFuture<Profile?>? {
         return CoroutineScope(Dispatchers.Main).future {
-            services.accountManager.fetchProfile()
+            services.accountManager.accountProfile()
         }
     }
 
@@ -331,6 +354,7 @@ class Accounts constructor(val context: Context) {
             SyncEngine.History -> {
                 TelemetryService.FxA.historySyncStatus(value)
             }
+            else -> {}
         }
 
         syncStorage.setStatus(engine, value)
@@ -393,6 +417,10 @@ class Accounts constructor(val context: Context) {
     fun setOrigin(origin: LoginOrigin, sessionId: String?) {
         loginOrigin = origin
         originSessionId = sessionId
+    }
+
+    suspend fun setDeviceName(deviceName: String) {
+        services.accountManager.authenticatedAccount()?.deviceConstellation()?.setDeviceName(deviceName, context);
     }
 
 }
