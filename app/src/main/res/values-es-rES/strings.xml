@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- IMPORTANT NOTE: If this file is updated anyhow, the STRs wiki must be updated accordingly:
-    https://github.com/MozillaReality/FirefoxReality/wiki/L10n -->
+    https://github.com/Igalia/wolvic/wiki/Localization -->
     <!-- This string is used on the virtual keyboard to label the 'Enter' key (stylized in uppercase letters as 'ENTER'). -->
     <string name="keyboard_enter_label">ENTER</string>
     <!-- This string is used on the virtual keyboard to label the 'Enter' key with a "Go" IME action.
@@ -73,10 +73,10 @@
     <!-- This string is displayed in the Settings dialog box and is used to label an
          On/Off switch which toggles whether an application crash is reported without first
          prompting the user. -->
-    <string name="settings_crash_reporting">Informe de fallos</string>
+    <string name="settings_crash_reporting">Enviar informes de error</string>
     <!-- This string is displayed in the Settings dialog box and is used to label an
          On/Off switch which toggles whether browser-level Telemetry is reported back to Mozilla. -->
-    <string name="settings_telemetry">Telemetry</string>
+    <string name="settings_telemetry">Telemetría</string>
     <!-- This string is used to label a button in the 'Settings' dialog window that, when pressed,
          opens a dialog box that contains privacy and security related settings. -->
     <string name="settings_privacy_security">Privacidad y seguridad</string>
@@ -111,7 +111,7 @@
      when there are no exceptions. -->
     <string name="settings_privacy_policy_tracking_empty_description">Cuando permites que un sitio web rastree tu actividad, aparecerán aquí.</string>
     <!-- This string labels the Reset button that removes all the sites not allowed to access WebXR -->
-    <string name="settings_privacy_policy_tracking_reset">Restablecer las excepciones para la protección mejorada contra el rastreo</string>
+    <string name="settings_privacy_policy_tracking_reset">Restablecer las excepciones para la protección contra rastreo mejorada.</string>
     <!-- This string is used as the title of the Tracking dialog used to do not allow websites to bypass tracking protection. -->
     <string name="settings_privacy_policy_login_exceptions_title">Excepciones de inicio de sesión</string>
     <!-- This string is displayed under the title the  Tracking dialog used to do not allow websites to bypass tracking protection. -->
@@ -128,13 +128,13 @@
     <!-- This string is used to label a button in the 'Settings' dialog window that, when pressed,
          opens a dialog box that contains settings that an application or Web developer might want to change. -->
     <string name="settings_developer_options">Opciones de desarrollador</string>
-    <!-- This string is used in the 'Settings' window when user is not signed into a Firefox Account -->
+    <!-- This string is used in the 'Settings' window when user is not signed into a Mozilla Account -->
     <string name="settings_fxa_account_sign_in">Iniciar sesión en cuenta</string>
-    <!-- This string is used in the 'Settings' window when user is signed into a Firefox Account -->
+    <!-- This string is used in the 'Settings' window when user is signed into a Mozilla Account -->
     <string name="settings_fxa_account_manage">Administrar cuenta</string>
-    <!-- This string is used in the 'Account' window when user is signed into a Firefox Account -->
+    <!-- This string is used in the 'Account' window when user is signed into a Mozilla Account -->
     <string name="settings_fxa_account_sign_out">Cerrar sesión</string>
-    <!-- This string is used in the 'Settings' window when user is signed into a Firefox Account, but needs to re-enter their password.
+    <!-- This string is used in the 'Settings' window when user is signed into a Mozilla Account, but needs to re-enter their password.
          Most common reason for this state is that the account password was changed on another device. -->
     <string name="settings_fxa_account_reconnect">Volver a conectar</string>
     <!-- This string is used to label a button in the 'Settings' dialog window that, when pressed,
@@ -160,13 +160,13 @@
          (e.g., `Español` is mapped to `es`) when configured in the 'Voice Search' system. -->
     <string name="settings_language_choose_language_voice_search">Elige el idioma en el que quieras para las búsquedas por voz</string>
     <!-- This string is used to label a text label that appears in the header of 'Language Settings' ->
-         'Firefox Display Language' dialog window (accessible from the browser's Settings dialog window).
+         'Wolvic Display Language' dialog window (accessible from the browser's Settings dialog window).
          Below this string appears a list of locales for the user to choose as their preferred display
          language for the application UI.
          '%1$s' Will be replaced at runtime with the app name. -->
     <string name="settings_language_choose_display_language_title">Idioma de visualización de %1$s</string>
     <!-- This string is used to label a text label that appears in the header description of 'Language Settings' ->
-         'Firefox Display Language' dialog window (accessible from the browser's Settings dialog window).
+         'Wolvic Display Language' dialog window (accessible from the browser's Settings dialog window).
          Below this string appears a list of locales for the user to choose as their preferred display
          language for the application UI. -->
     <string name="settings_language_choose_language_display_description">Elige el idioma en el que quieres que aparezcan los menús, mensajes y notificaciones.</string>
@@ -303,14 +303,14 @@
     <!-- This string is used to label a button in the 'Settings' dialog window that, when pressed,
         opens the Firfox Reality support web site in the browser window. -->
     <string name="settings_help">Ayuda</string>
-    <!-- This string is displayed in the settings header under the Firefox Reality logo. When clicked the settings panel is closed
+    <!-- This string is displayed in the settings header under the Wolvic logo. When clicked the settings panel is closed
          a the survey web site in opened in the currently focused window -->
     <string name="settings_send_your_feedback">Envíanos tus comentarios</string>
-    <!-- This string is used in the 'Settings' window when user is signed-out of Firefox Accounts -->
+    <!-- This string is used in the 'Settings' window when user is signed-out of Mozilla Accounts -->
     <string name="settings_accounts_sign_in">Iniciar sesión</string>
-    <!-- This string is used in the 'Settings' window when user is signed into a Firefox Account -->
+    <!-- This string is used in the 'Settings' window when user is signed into a Mozilla Account -->
     <string name="settings_accounts_sign_out">Cerrar sesión</string>
-    <!-- This string is used in the 'Settings' window when user is signed into a Firefox Account, but needs to re-enter their password.
+    <!-- This string is used in the 'Settings' window when user is signed into a Mozilla Account, but needs to re-enter their password.
          Most common reason for this state is that the account password was changed on another device. -->
     <string name="settings_accounts_reconnect">Volver a conectar</string>
     <!-- This string is used to label a button in the 'Settings' dialog window that, when pressed,
@@ -331,6 +331,9 @@
     <!-- This string labels an On/Off switch in the 'Developer Options' dialog
      and is used to enable or disable curved display. -->
     <string name="developer_options_curved_display">Habilitar pantalla curva</string>
+    <!-- This string labels an On/Off switch in the 'Display' dialog
+     and is used to align the windows vertically to the bottom or the center. -->
+    <string name="developer_options_center_windows">Centrar verticalmente las ventanas</string>
     <!-- This string labels an On/Off switch in the 'Developer Options' dialog
          and is used to toggle remote debugging of website content in the application. -->
     <string name="developer_options_remote_debugging">Activar depuración remota</string>
@@ -506,7 +509,7 @@
     <string name="fxa_account_options_syncing">Sincronizando...</string>
     <!-- This string is used in the FxA account manager panel as a header for the sync options for syncing
          history, bookmarks, passwords, etc. -->
-    <string name="fxa_account_options_sync_description">Elije qué sincronizar en tus dispositivos con Firefox</string>
+    <string name="fxa_account_options_sync_description">Elige qué sincronizar en tus dispositivos usando Firefox Sync</string>
     <!-- This string is used to in the FxA account manage panel as a description for the Bookmarks sync switch. -->
     <string name="fxa_account_options_bookmarks_sync">Marcadores</string>
     <!-- This string is used to in the FxA account manage panel as a description for the History sync switch. -->
@@ -538,7 +541,7 @@
     <!-- This string labels an Allow/Don't Allow switch in the Privacy and Security settings dialog
          and is used to enable or disable playback of DRM controlled content.
          '%1$s' Will be replaced at runtime with the DRM Learn More url. -->
-    <string name="security_options_drm_content_v1"><![CDATA[Permitir que los sitios identifiquen automáticamente el dispositivo para reproducir contenido controlado por DRM. (<a href="%1$s">Saber más</a>)]]></string>
+    <string name="security_options_drm_content_v1">Permitir que los sitios identifiquen automáticamente el dispositivo para reproducir contenido controlado por DRM. (&lt;a href=%1$s&gt;Saber más&lt;/a&gt;)</string>
     <!-- This string labels an Allow/Don't Allow switch in the Privacy and Security settings dialog
      and is used to enable or disable the tabs restoration after a fresh app start. -->
     <string name="security_options_restore_tabs">Restaurar pestañas y ventanas después de reiniciar</string>
@@ -553,12 +556,12 @@
      and is used to enable or disable login auto-fill. If disabled the logins forms won't be auto-filled. -->
     <string name="security_options_login_autofill">Autocompletado</string>
     <!-- This string labels an Allow/Don't Allow switch in the Logins And Passwords settings dialog
-     and is used to enable or disable login sync with Firefox Account. If disabled the logins
-     won't be synced with the Firefox Account. -->
-    <string name="security_options_login_sync">Sincronizar inicios de sesión con cuentas de Firefox</string>
+     and is used to enable or disable login sync with Mozilla Account. If disabled the logins
+     won't be synced with the Mozilla Account. -->
+    <string name="security_options_login_sync">Sincronizar inicios de sesión con cuentas de Mozilla</string>
     <!-- This string labels a button in the Logins And Passwords settings dialog
-     that when clicked opens the Firefox Accounts settings panel. -->
-    <string name="security_options_login_fxa">Cuenta...</string>
+     that when clicked opens the Mozilla Accounts settings panel. -->
+    <string name="security_options_login_fxa">Cuenta…</string>
     <!-- This string labels a button in the Logins And Passwords settings dialog
      that when clicked opens the saved logins panel which lists all the stored logins/password entries. -->
     <string name="security_options_login_saved">Inicios de sesión guardados…</string>
@@ -612,7 +615,7 @@
          webxr blocked sites. -->
     <string name="security_options_webxr_settings">Avanzado</string>
     <!-- This string is a label above the group of switches that indicates that the switches below
-         relate to Firefox data collection and use.
+         relate to Wolvic data collection and use.
          '%1$s' Will be replaced at runtime with the app name. -->
     <string name="security_options_speech_data_collection_title">Recopilación y uso de datos de %1$s</string>
     <!-- This string labels an Allow/Don't Allow switch in the Privacy and Security settings dialog
@@ -627,24 +630,23 @@
     <!-- This string labels an Allow/Don't Allow switch in the Privacy and Security settings dialog
      and is used to enable or disable permission to send crash reports.
      '%1$s' Will be replaced at runtime with the app name. -->
-    <string name="security_options_crash_reports_send_data">Permitir que %1$s envíe en tu nombre informes de fallos registrados
-</string>
+    <string name="security_options_crash_reports_send_data">Permitir que %1$s envíe en tu nombre informes de error</string>
     <!-- This string is displayed below the On/Off switch to indicate a switch's current state as 'On'. -->
     <string name="on">Activado</string>
     <!-- This string is displayed below the On/Off switch to indicate a switch's current state as 'Off'. -->
     <string name="off">Desactivado</string>
     <!-- This string is displayed on the left of switched that are used to enable/disable sync when the switch is enabled.
-         i.e. The history switch for Firefox account syncing-->
+         i.e. The history switch for Mozilla account syncing-->
     <string name="sync">Sincronizar</string>
     <!-- This string is displayed on the left of switched that are used to enable/disable sync when the switch is enabled.
-         i.e. The history switch for Firefox account syncing-->
+         i.e. The history switch for Mozilla account syncing-->
     <string name="do_not_sync">No sincronizar</string>
     <!-- This string is displayed in the voice-search dialog box that is shown to the user when they press the
          button used to initiate Voice Search. -->
     <string name="voice_search_start">¿Qué te gustaría buscar en la Web?</string>
     <!-- This string is displayed in the voice-search dialog box that is shown to the user when they press the
          button used to initiate Voice Search. -->
-    <string name="voice_search_example">Ejemplo: Di "vídeos de 360, clima, noticias..."</string>
+    <string name="voice_search_example">Ejemplo: Di “vídeos de 360, clima, noticias…”</string>
     <!-- This string is displayed in a dialog box show to the user while the Voice Search is being
          performed. It indicates that the search query is running and they should wait for the result. -->
     <string name="voice_search_decoding">Buscando…</string>
@@ -656,7 +658,7 @@
     <string name="voice_search_try_again">Vuelve a intentarlo.</string>
     <!-- This string is displayed in a dialog after the user has declined permission to use the
          device's microphone. It explains why Voice Search is not working. -->
-    <string name="voice_search_permission_after_decline">Permita el acceso al micrófono para usar la búsqueda por voz.</string>
+    <string name="voice_search_permission_after_decline">Permite el acceso al micrófono para usar la búsqueda por voz.</string>
     <!-- This string is displayed in the button at the bottom of the Voice Search dialog. When clicked the Voice search dialog is closed. -->
     <string name="voice_search_close">Cerrar</string>
     <!-- This string is displayed in the URL bar when it is empty. It informs the user that they
@@ -671,10 +673,10 @@
     <!-- This string labels a button that is used to approve an action. -->
     <string name="back_button">Atrás</string>
     <!-- This string is displayed in a dialog after an application crash. -->
-    <string name="crash_dialog_heading">Hubo un problema y se cerró</string>
+    <string name="crash_dialog_heading">Hubo un problema y se cerró la aplicación</string>
     <!-- This string explains why Mozilla would like the user to allow the crash data to be uploaded.
          '%1$s' will be replaced at runtime with the app's domain name. -->
-    <string name="crash_dialog_message"><![CDATA[Ayuda a Mozilla a mejorar %1$s enviando tu informe de fallos.]]></string>
+    <string name="crash_dialog_message"><![CDATA[Por favor, ayude a Mozilla a mejorar %1$s enviándonos sus errores. <a href="more">Más información</a>]]></string>
     <!-- This string labels a checkbox in the crash dialog box. When checked, the user will no longer
          be prompted for permission to upload crash data after an application crash. -->
     <string name="crash_dialog_send_data">Enviar siempre la información sin preguntar</string>
@@ -783,7 +785,7 @@
          all the bookmarks. -->
     <string name="bookmarks_show_all">Mostrar todos los marcadores</string>
     <!-- This string is displayed is the "Sync" button in the bookmarks panel. When pressed the
-         bookmarks are synced with the Firefox account. -->
+         bookmarks are synced with the Mozilla account. -->
     <string name="bookmarks_sync">Sincronizar</string>
     <!-- This string is displayed as the title of the history list, which contains the user's visited websites. -->
     <string name="history_title">Historial</string>
@@ -932,12 +934,12 @@
     <!-- This string is displayed at the bottom of the addon permissions list view. When clicked it will open a new tab with the addons permissions SUMO page -->
     <string name="addons_permissions_learn_more">Saber más sobre permisos</string>
     <!-- This string is displayed is the "Sync" button in the history panel. When pressed the
-         history is synced with the Firefox account. -->
+         history is synced with the Mozilla account. -->
     <string name="fxa_sync">Sincronizar</string>
     <!-- This string is displayed is the "Sync" button in the history panel when the sync is in progress. -->
     <string name="fxa_syncing">Sincronizando…</string>
     <!-- This string is displayed in the title of the FxA sign out dialog displayed when the user clicks on the Sign out button. -->
-    <string name="fxa_signout_confirmation_title">¿Salir de tu cuenta Firefox?</string>
+    <string name="fxa_signout_confirmation_title">¿Salir de tu cuenta Mozilla?</string>
     <!-- This string is displayed in the body of the FxA sign out dialog displayed when the user clicks on the Sign out button. -->
     <string name="fxa_signout_confirmation_body">Cuando cierres la sesión, no podrás enviar ni recibir pestañas de otros dispositivos. Tus marcadores e historial también dejarán de sincronizarse.</string>
     <!-- This string is displayed in the checkbox text of the FxA sign out dialog displayed when the user clicks on the Sign out button.
@@ -1018,7 +1020,7 @@
     <string name="privacy_options_saved_login_delete">Eliminar</string>
     <!-- This string is used to label radio buttons for setting ETP in.
          '%1$' Will be replaced at runtime with the Learn More url for ETP. -->
-    <string name="privacy_options_tracking"><![CDATA[Protección mejorada contra el rastreo. (<a href="%1$s">Saber más</a>)]]></string>
+    <string name="privacy_options_tracking"><![CDATA[Protección contra rastreo mejorada (<a href="%1$s">Saber más</a>)]]></string>
     <!-- This string labels the button in the privacy option panel that opens the dialog to add/remove
          Tracking protection exceptions. -->
     <string name="privacy_options_tracking_exceptions_v1">Avanzado</string>
@@ -1079,7 +1081,7 @@
          When clicked the current media playback is paused. -->
     <string name="media_pause_tooltip">Pausar</string>
     <!-- This string is for the tooltip that appears upon hovering the 'Home' button in the browser's navigation bar.
-         'Home' refers to the browser's start page (e.g., the Firefox Reality Home Page). -->
+         'Home' refers to the browser's start page (e.g., the Wolvic Home Page). -->
     <string name="home_tooltip">Inicio</string>
     <!-- This string is for the tooltip that appears upon hovering the 'Voice Search' (microphone) button in the
          browser's navigation bar. 'Voice Search' refers to the browser's system for searching the Web using
@@ -1220,12 +1222,6 @@
     <!-- This string is for the tooltip that appears when the user hovers over the 'Downloads' icon in the
          tray and the Downloads view is closed. The button it labels, when pressed, closes the Downloads view. -->
     <string name="close_downloads_tooltip">Cerrar descargas</string>
-    <!-- This string is for the tooltip that appears when the user hovers over the 'Library' icon in the
-         tray and the Library view is closed. The button it labels, when pressed, opens the library panel. -->
-    <string name="open_library_tooltip">Abrir biblioteca</string>
-    <!-- This string is for the tooltip that appears when the user hovers over the 'Library' icon in the
-         tray and the Library view is closed. The button it labels, when pressed, closes the Library panel. -->
-    <string name="close_library_tooltip">Cerrar biblioteca</string>
     <!-- This string is for the tooltip that appears when the user hovers over the 'What's New' icon in the
          Navigation Bar. The button it labels, when pressed, open the release notes page. -->
     <string name="whats_new_tooltip">Novedades</string>
@@ -1283,6 +1279,12 @@
     <string name="before_unload_prompt_stay">Permanecer en la página</string>
     <!-- This string is displayed in a button of the Before Unload prompt. Clicking it confirms the navigation and leaves the page. -->
     <string name="before_unload_prompt_leave">Abandonar la página</string>
+    <!-- This string is displayed in the title for dialog that warns users about a navigation that results in a repost. -->
+    <string name="repost_confirm_title">Confirmar reenvío del formulario</string>
+    <!-- This string is displayed in the message for re-navigation to page that leads to HTTP POST. -->
+    <string name="repost_confirm_message">La página que buscas ha utilizado la información que has especificado. Volver a la página podría provocar la repetición de alguna acción. ¿Quieres continuar?</string>
+    <!-- This string is displayed in the resend button for post warning -->
+    <string name="repost_confirm_continue">Continuar</string>
     <!-- This string is displayed in a button that when pressed allows a user to view a page that has been blocked from being displayed.-->
     <string name="performance_unblock_page">Desbloquear página</string>
     <!-- This string is displayed as the title of a dialog displayed when poor web page performance has been detected. -->
@@ -1326,7 +1328,7 @@
     <!-- This string is displayed as a description below the title of the pop-up blocking dialog. -->
     <string name="popup_block_description_v1">¿Quieres mostrarlos de todos modos?</string>
     <!-- This string is displayed on the right of the checkbox in the the pop-up blocking dialog.
-         If the checkbox is checked Firefox will never ask again to block pop-ups for this site -->
+         If the checkbox is checked Wolvic will never ask again to block pop-ups for this site -->
     <string name="popup_block_checkbox">No volver a preguntar por este sitio</string>
     <!-- This string is displayed on the left button of the pop-up blocking dialog.
          If the button is clicked the pop-up will be shown -->
@@ -1385,6 +1387,9 @@ the Select` button. When clicked it closes all the previously selected tabs -->
          it opens the window resize panel -->
     <string name="hamburger_menu_resize">Cambiar tamaño de ventana</string>
     <!-- This string is displayed inside the Hamburger menu at the right of the navigation bar. When clicked
+         it opens the find in page option -->
+    <string name="hamburger_menu_find_in_page">Buscar en la página</string>
+    <!-- This string is displayed inside the Hamburger menu at the right of the navigation bar. When clicked
          it opens the addons panel -->
     <string name="hamburger_menu_addons">Complementos</string>
     <!-- This string is displayed inside the Hamburger menu at the right of the navigation bar. When clicked
@@ -1409,12 +1414,12 @@ the Select` button. When clicked it closes all the previously selected tabs -->
     <string name="whats_new_title_1">Inicia sesión para enviar pestañas</string>
     <!-- This string is displayed in the body of the what's new dialog that is displayed if the user has updated
          or updated the app and hasn't signed it yet. -->
-    <string name="whats_new_body_1">Inicia sesión o crea una nueva cuenta de Firefox para enviar pestañas desde Firefox en tu ordenador de escritorio o dispositivo móvil a tus auriculares.</string>
+    <string name="whats_new_body_1">Inicia sesión o crea una nueva cuenta de Mozilla para enviar pestañas desde Firefox en tu ordenador de escritorio o dispositivo móvil a tu casco.</string>
     <!-- This string is displayed in the body of the what's new dialog that is displayed if the user has updated
          or updated the app and hasn't signed it yet. -->
-    <string name="whats_new_body_sub_1">La cuenta de Firefox también te permite sincronizar marcadores e historial en todos tus dispositivos.</string>
+    <string name="whats_new_body_sub_1">La cuenta de Mozilla también te permite sincronizar marcadores e historial en todos tus dispositivos.</string>
     <!-- This string is displayed a button of the what's new dialog that is displayed if the user has updated
-         or updated the app and hasn't signed it yet. If clicked the user is redirected to the Firefox Account sign-in page. -->
+         or updated the app and hasn't signed it yet. If clicked the user is redirected to the Mozilla Account sign-in page. -->
     <string name="whats_new_button_sign_in">Iniciar sesión</string>
     <!-- This string is displayed a button of the what's new dialog that is displayed if the user has updated
          or updated the app and hasn't signed it yet. If clicked the dialog is dismissed. -->
@@ -1595,7 +1600,7 @@ the Select` button. When clicked it closes all the previously selected tabs -->
     <string name="tray_status_right_controller">Controlador derecho: %1$s</string>
     <!-- This string is shown in the tooltip of the headset status bar icon when hovered.
     '%1$s' Will be replaced at runtime with headset battery level. -->
-    <string name="tray_status_headset">Auriculares: %1$s</string>
+    <string name="tray_status_headset">Casco: %1$s</string>
     <!-- This string is displayed in the 2D phone screen when the user starts the app without an available device.
      This message is shown until the user correctly setups the device. -->
     <string name="hvr_connect_glass_message">Conecte sus HUAWEI VR Glass para usar esta aplicación</string>
@@ -1655,39 +1660,48 @@ the Select` button. When clicked it closes all the previously selected tabs -->
         \n\n El contenido y elementos que integran la aplicación han sido implementados y/o desarrollados por IGALIA bajo licencias de código abierto, estando protegidos, sin limitaciones, por las leyes de propiedad intelectual e industrial del Reino de España y por los Tratados y Convenios internacionales que resultasen de aplicación.
     </string>
     <string name="privacy_policy_subtitle_2">Protección de datos</string>
-    <string name="privacy_policy_section_2">
-        IGALIA esta comprometida con el cumplimiento de las previsiones legales en materia de protección de datos personales: Reglamento (UE)2016/679, del Parlamento Europeo y del Consejo, de 27/4/2016 relativo a la protección de las personas físicas en lo que respecta al tratamiento de datos personales y a la libre circulación de estos datos (RGPD) y en la Ley Orgánica 3/2018, de 5 de diciembre, de protección de datos y garantía de los derechos digitales (LOPDGDD).
-        \n Los datos personales se definen legalmente como aquella información vinculada a una persona física identificada o identificable, siempre que su identidad pueda determinarse, directa o indirectamente, en particular mediante un identificador, como por ejemplo un nombre, un número de identificación, datos de localización, un identificador en línea o uno o varios elementos propios de la identidad física, fisiológica, genética, psíquica, económica, cultural o social de dicha persona.
-        \n IGALIA no recaba datos personales de forma que el usuario pueda ser identificado. Por ello, usted puede utilizar la aplicación, consultar y navegar por el entorno de realidad virtual sin revelar su identidad ni proporcionar datos de carácter personal a IGALIA, ya sea directa o indirectamente, por ello IGALIA no puede asumir ninguna responsabilidad por lo datos que se depositen en la misma.
-        \n Los únicos datos e información que obtendrá IGALIA por el uso de esta App, que en ningún momento se vincularán individualmente con el usuario, son los siguientes:
-        \n\n\t\u2022 Datos analíticos, puramente estadísticos y no identificativos.
-        \n\t\u2022 Para capturar y traducir la voz a texto, los datos sonoros del usuario son enviados a los servidores titularidad de la empresa responsable de cada plataforma, a través de una API al efecto: como por ejemplo, en Oculus, de Facebook, un servicio que se envía a Oculus Voice SDK. En ningún momento dichos datos son tratados, accedidos ni incorporados a los servidores titularidad de IGALIA. Los datos que se recopilen serán responsabilidad exclusiva de las empresas titulares de cada plataforma (en adelante, los Terceros) las cuales pueden estar ubicadas fuera de la Unión Europea y sometidas a un régimen jurídico menos protector de la privacidad del usuario. Le recomendamos leer atentamente la política de privacidad y condiciones de uso de cada una de dichas plataformas externas antes de aceptar y utilizar sus servicios. IGALIA no será directa ni indirectamente responsable del tratamiento de datos personales por parte de dichos Terceros.
-        \n\t\u2022 Se podrá obtener información de localización geográfica del navegador, en lugar del utilizado por el sistema. Sin embargo, para ello usted debe aceptar los permisos de localización de su dispositivo a través de un aviso específico al respecto e IGALIA en modo alguno vinculará dicha información con usted como persona identificada o identificable, aunque los Terceros citados en el punto anterior sí podrían hacerlo, en su caso. Preste atención a sus términos legales.
-        \n\t\u2022 IGALIA no accederá ni almacenará, en modo alguno, las direcciones ni las URLs visitadas por usted.
-        \n\t\u2022 En caso de integración de los servicios Cloud para cuentas de Terceros, como Firefox Accounts o Google Accounts, para sincronizar datos como su historia de navegación o sus bookmarks de usuario, IGALIA no accederá ni tratará en modo alguno dicha información ni pasará por sus servidores.
-        \n\n Asimismo, usted observará que la aplicación le solicitará una serie de permisos especiales respecto a su dispositivo que, a continuación, aclaramos en cuanto a su función y finalidad:
-        \n\n\t\u2022 Permiso para grabación de audio: Si usted autoriza esto, se utilizará para la citada función de traducción de voz a texto además de la funcionalidad de búsqueda por voz (“voice search”) para la que se utiliza el servicio que proporciona Meetkai cuya política de provacidad se puede consultar aquí: https://meetkai.com/privacy
-        \n\n\t\u2022 Permiso para la captación de fotos y vídeos: Es posible que se solicite debido a que el dispositivo del usuario utilice cámaras para ver el entorno y situar al usuario en el espacio físico mediante sistemas de trazado o “tracking”. IGALIA no accede ni trata dicha información.
-        \n\n\t\u2022 Permiso para obtener información de localización basada en fuentes como el GPS, estaciones de telefonía o WIFI: Si usted autoriza esto, se utilizará para mostrar en todo momento un icono del tipo de conexión en su aplicación así como, en su caso, la citada función de localización geográfica mencionada anteriormente. IGALIA en modo alguno vinculará dicha información con usted como persona identificada o identificable, aunque los Terceros citados anteriormente sí podrían hacerlo, en su caso. Preste atención a sus términos legales. En concreto, en los dispositivos de Huawei también se accede a la información del GPS para informar a un servicio propio de dicha compañía denominado “LocationService”.
-        \n\n\t\u2022 Permiso para leer, modificar o borrar fotos, contenido multimedia y ficheros en la tarjeta de memoria: esto es necesario para que el navegador pueda guardar información local en el dispositivo como los archivos de caché, ajustes, páginas visitadas y favoritas, etc. IGALIA no accede ni trata dicha información.
-        \n\n Recordamos nuevamente que las plataformas de Terceros a los que acceda o con los que utilice la presente aplicación, sí podrían recabar estos u otros datos identificativos sobre usted, en el caso de que los cumplimente o no de forma voluntaria y/o consciente, incluso fuera del ámbito de la legislación europea de protección de datos. Por ello, le recomendamos que se informe y preste especial atención a los términos legales de dichos Terceros como, por ejemplo, los siguientes:
-        \n\n\t\u2022 Google: https://policies.google.com/privacy
-        \n\t\u2022 Facebook: https://www.facebook.com/about/privacy/update
-        \n\t\u2022 MeetKai: https://meetkai.com/privacy
-        \n\n Asimismo, IGALIA le informa de que si usted utiliza la opción de reconocimiento de voz del navegador, las transmisiones sonoras de su voz no serán conservadas ni vinculadas de modo alguno con usted, aunque sí se conservará el texto generado de manera totalmente anonimizada a efectos de mejora del servicio por parte de la empresa Meetkai (más información en el siguiente link: https://meetkai.com/es/privacy). Como es interés de IGALIA la no vinculación a ningún usuario y la no afectación de su privacidad, se ruega al usuario que no incluya ninguna información personal ni confidencial, de ningún tipo, en sus alocuciones sonoras de voz.
-        \n En cualquier caso, IGALIA garantiza el adecuado ejercicio por los interesados de los derechos de acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad, respecto de sus datos personales. A tal efecto, IGALIA ha establecido un protocolo/procedimiento interno para llevarlos a efecto.
-        \n La forma en que los interesados pueden ejercer sus derechos son: mediante solicitud a IGALIA en la dirección física: Calle Bugallal Marchesi, 22, 1o, 15008, A Coruña, Referencia: “Protección de Datos” o en la dirección de correo electrónico: info@igalia.com
-        \n En ambos casos, el interesado deberá adjuntar copia de su DNI o documento identificativo para acreditar su identidad.
-        \n El Responsable de protección de datos o departamento al que se haya encomendado la gestión de los derechos, registrará los ejercicios de derechos en el formulario disponible al efecto, en el que se consignarán los siguientes datos:
-        \n\n\t\u2022 Nº de solicitud: se asignará un número a cada una de las solicitudes recibidas
-        \n\t\u2022 Sede: Si el responsable dispone de varias sedes, se hará constar la sede en la cual se recibió la solicitud
-        \n\t\u2022 Canal de reclamación: se indicará el canal por el cual se recibió la solicitud: dirección de correo física, mail, etc.
-        \n\t\u2022 Día de entrada: se indicará la fecha de entrada de la solicitud.
-        \n\t\u2022 Derechos ejercidos: En este apartado se consignará el tipo de derecho ejercido
-        \n\t\u2022 Día de respuesta: se indicará el día en el cual se remitió respuesta al interesado.
-        \n\n La documentación acreditativa (recepción de solicitud/contestación, comunicaciones, etc.) se archivará a efectos de acreditar su correcta gestión.
-        \n Asimismo, se le recuerda que usted tiene derecho a presentar una reclamación ante La Agencia Española de Protección de Datos.
-    </string>
+    <string name="privacy_policy_section_2">IGALIA esta comprometida con el cumplimiento de las previsiones legales en materia de protección de datos personales: Reglamento (UE)2016/679, del Parlamento Europeo y del Consejo, de 27/4/2016 relativo a la protección de las personas físicas en lo que respecta al tratamiento de datos personales y a la libre circulación de estos datos (RGPD) y en la Ley Orgánica 3/2018, de 5 de diciembre, de protección de datos y garantía de los derechos digitales (LOPDGDD).
+\n Los datos personales se definen legalmente como aquella información vinculada a una persona física identificada o identificable, siempre que su identidad pueda determinarse, directa o indirectamente, en particular mediante un identificador, como por ejemplo un nombre, un número de identificación, datos de localización, un identificador en línea o uno o varios elementos propios de la identidad física, fisiológica, genética, psíquica, económica, cultural o social de dicha persona.
+\n IGALIA no recaba datos personales de forma que el usuario pueda ser identificado. Por ello, usted puede utilizar la aplicación, consultar y navegar por el entorno de realidad virtual sin revelar su identidad ni proporcionar datos de carácter personal a IGALIA, ya sea directa o indirectamente, por ello IGALIA no puede asumir ninguna responsabilidad por lo datos que se depositen en la misma.
+\n Los únicos datos e información que obtendrá IGALIA por el uso de esta App, que en ningún momento se vincularán individualmente con el usuario, son los siguientes:
+\n
+\n\t• Datos analíticos, puramente estadísticos y no identificativos.
+\n\t• Para capturar y traducir la voz a texto, los datos sonoros del usuario son enviados a los servidores titularidad de la empresa responsable de cada plataforma, a través de una API al efecto: como por ejemplo, en Oculus, de Facebook, un servicio que se envía a Oculus Voice SDK. En ningún momento dichos datos son tratados, accedidos ni incorporados a los servidores titularidad de IGALIA. Los datos que se recopilen serán responsabilidad exclusiva de las empresas titulares de cada plataforma (en adelante, los Terceros) las cuales pueden estar ubicadas fuera de la Unión Europea y sometidas a un régimen jurídico menos protector de la privacidad del usuario. Le recomendamos leer atentamente la política de privacidad y condiciones de uso de cada una de dichas plataformas externas antes de aceptar y utilizar sus servicios. IGALIA no será directa ni indirectamente responsable del tratamiento de datos personales por parte de dichos Terceros.
+\n\t• Se podrá obtener información de localización geográfica del navegador, en lugar del utilizado por el sistema. Sin embargo, para ello usted debe aceptar los permisos de localización de su dispositivo a través de un aviso específico al respecto e IGALIA en modo alguno vinculará dicha información con usted como persona identificada o identificable, aunque los Terceros citados en el punto anterior sí podrían hacerlo, en su caso. Preste atención a sus términos legales.
+\n\t• IGALIA no accederá ni almacenará, en modo alguno, las direcciones ni las URLs visitadas por usted.
+\n\t• En caso de integración de los servicios Cloud para cuentas de Terceros, como Mozilla Accounts o Google Accounts, para sincronizar datos como su historia de navegación o sus bookmarks de usuario, IGALIA no accederá ni tratará en modo alguno dicha información ni pasará por sus servidores.
+\n
+\n Asimismo, usted observará que la aplicación le solicitará una serie de permisos especiales respecto a su dispositivo que, a continuación, aclaramos en cuanto a su función y finalidad:
+\n
+\n\t• Permiso para grabación de audio: Si usted autoriza esto, se utilizará para la citada función de traducción de voz a texto además de la funcionalidad de búsqueda por voz (“voice search”) para la que se utiliza el servicio que proporciona Meetkai cuya política de provacidad se puede consultar aquí: https://meetkai.com/privacy
+\n
+\n\t• Permiso para la captación de fotos y vídeos: Es posible que se solicite debido a que el dispositivo del usuario utilice cámaras para ver el entorno y situar al usuario en el espacio físico mediante sistemas de trazado o “tracking”. IGALIA no accede ni trata dicha información.
+\n
+\n\t• Permiso para obtener información de localización basada en fuentes como el GPS, estaciones de telefonía o WIFI: Si usted autoriza esto, se utilizará para mostrar en todo momento un icono del tipo de conexión en su aplicación así como, en su caso, la citada función de localización geográfica mencionada anteriormente. IGALIA en modo alguno vinculará dicha información con usted como persona identificada o identificable, aunque los Terceros citados anteriormente sí podrían hacerlo, en su caso. Preste atención a sus términos legales. En concreto, en los dispositivos de Huawei también se accede a la información del GPS para informar a un servicio propio de dicha compañía denominado “LocationService”.
+\n
+\n\t• Permiso para leer, modificar o borrar fotos, contenido multimedia y ficheros en la tarjeta de memoria: esto es necesario para que el navegador pueda guardar información local en el dispositivo como los archivos de caché, ajustes, páginas visitadas y favoritas, etc. IGALIA no accede ni trata dicha información.
+\n
+\n Recordamos nuevamente que las plataformas de Terceros a los que acceda o con los que utilice la presente aplicación, sí podrían recabar estos u otros datos identificativos sobre usted, en el caso de que los cumplimente o no de forma voluntaria y/o consciente, incluso fuera del ámbito de la legislación europea de protección de datos. Por ello, le recomendamos que se informe y preste especial atención a los términos legales de dichos Terceros como, por ejemplo, los siguientes:
+\n
+\n\t• Google: https://policies.google.com/privacy
+\n\t• Facebook: https://www.facebook.com/about/privacy/update
+\n\t• MeetKai: https://meetkai.com/privacy
+\n
+\n Asimismo, IGALIA le informa de que si usted utiliza la opción de reconocimiento de voz del navegador, las transmisiones sonoras de su voz no serán conservadas ni vinculadas de modo alguno con usted, aunque sí se conservará el texto generado de manera totalmente anonimizada a efectos de mejora del servicio por parte de la empresa Meetkai (más información en el siguiente link: https://meetkai.com/es/privacy). Como es interés de IGALIA la no vinculación a ningún usuario y la no afectación de su privacidad, se ruega al usuario que no incluya ninguna información personal ni confidencial, de ningún tipo, en sus alocuciones sonoras de voz.
+\n En cualquier caso, IGALIA garantiza el adecuado ejercicio por los interesados de los derechos de acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad, respecto de sus datos personales. A tal efecto, IGALIA ha establecido un protocolo/procedimiento interno para llevarlos a efecto.
+\n La forma en que los interesados pueden ejercer sus derechos son: mediante solicitud a IGALIA en la dirección física: Calle Bugallal Marchesi, 22, 1o, 15008, A Coruña, Referencia: “Protección de Datos” o en la dirección de correo electrónico: info@igalia.com
+\n En ambos casos, el interesado deberá adjuntar copia de su DNI o documento identificativo para acreditar su identidad.
+\n El Responsable de protección de datos o departamento al que se haya encomendado la gestión de los derechos, registrará los ejercicios de derechos en el formulario disponible al efecto, en el que se consignarán los siguientes datos:
+\n
+\n\t• Nº de solicitud: se asignará un número a cada una de las solicitudes recibidas
+\n\t• Sede: Si el responsable dispone de varias sedes, se hará constar la sede en la cual se recibió la solicitud
+\n\t• Canal de reclamación: se indicará el canal por el cual se recibió la solicitud: dirección de correo física, mail, etc.
+\n\t• Día de entrada: se indicará la fecha de entrada de la solicitud.
+\n\t• Derechos ejercidos: En este apartado se consignará el tipo de derecho ejercido
+\n\t• Día de respuesta: se indicará el día en el cual se remitió respuesta al interesado.
+\n
+\n La documentación acreditativa (recepción de solicitud/contestación, comunicaciones, etc.) se archivará a efectos de acreditar su correcta gestión.
+\n Asimismo, se le recuerda que usted tiene derecho a presentar una reclamación ante La Agencia Española de Protección de Datos.</string>
     <string name="privacy_policy_subtitle_3">Derecho aplicable e idioma original</string>
     <string name="privacy_policy_section_3">
         La presente Política de Privacidad está sometida al derecho español. El idioma de Política de Privacidad de esta aplicación es el español. Por ello, cualquier posible divergencia entre la versión original en español y su traducción a otro idioma será considerada como preponderante la versión española.
@@ -1708,4 +1722,114 @@ the Select` button. When clicked it closes all the previously selected tabs -->
     <string name="settings_language_choose_language_voice_search_service_title">Servicio de búsqueda por voz</string>
     <string name="language_service_options_reset">Restablecer la configuración del servicio de búsqueda por voz</string>
     <string name="voice_service_metkai">MeetKai</string>
+    <string name="permissions_dialog_remember_choice">Recordar esta decisión</string>
+    <string name="settings_language_galician">Gallego</string>
+    <string name="settings_language_portuguese_br">Portugués (Brasil)</string>
+    <string name="notifications_title">Notificaciones</string>
+    <string name="notifications_empty">Tu lista de notificaciones está vacía</string>
+    <string name="notifications_loading">Cargando notificaciones</string>
+    <string name="web_apps_empty">Tu lista de aplicaciones web está vacía</string>
+    <string name="web_apps_dialog_title">Instalar aplicación web</string>
+    <string name="web_apps_dialog_title_parameter">Instalar %1$s</string>
+    <string name="web_apps_dialog_install">Instalar</string>
+    <string name="web_apps_dialog_cancel">Cancelar</string>
+    <string name="hamburger_menu_save_web_app">Guardar aplicación web…</string>
+    <string name="download_addon_install_cancel">Cancelar</string>
+    <string name="download_addon_install_confirm_install">Instalar</string>
+    <string name="download_addon_install_blocked_body">Permitir la instalación de complementos locales en las Opciones de Desarrollador para proceder.</string>
+    <string name="addons_experimental_section_title">Experimental</string>
+    <string name="download_addon_install_blocked">La instalación del complemento ha sido bloqueada</string>
+    <string name="upload_button">Subir</string>
+    <string name="upload_list_empty">No hay archivos disponibles para enviar</string>
+    <string name="web_apps_title">Aplicaciones web</string>
+    <string name="web_apps_dialog_body">¿Quieres instalar la siguiente aplicación web\? Estará disponible en tu biblioteca.</string>
+    <string name="web_apps_description">Pulsa el botón Guardar aplicación web... cuando estés en una página para añadirla a tus aplicaciones web.</string>
+    <string name="web_apps_loading">Cargando aplicaciones web</string>
+    <string name="web_apps_saved_notification">¡Aplicación web añadida!</string>
+    <string name="download_addon_install">Instalar complemento</string>
+    <string name="settings_language_portuguese">Portugués</string>
+    <string name="deprecated_version_dialog_info_button">Más información…</string>
+    <string name="deprecated_version_dialog_store_button">Instalar…</string>
+    <string name="security_options_permission_fine_location_warning">Wolvic sólo puede obtener tu ubicación aproximada. Esto se puede cambiar en la configuración del sistema.</string>
+    <string name="hamburger_menu_toggle_passthrough">Passthrough</string>
+    <string name="user_feedback_tooltip">Compartir ideas y comentarios</string>
+    <string name="rCN_first_launch_clickable_privacy_text">Política de privacidad</string>
+    <string name="rCN_first_launch_agree">Aceptar</string>
+    <string name="rCN_first_launch_disagree">No aceptar</string>
+    <string name="rCN_first_launch_confirmation_body">\\Si seleccionas \"No aceptar\", lamentablemente ya no podremos brindarle los servicios.
+\n
+\nPuede leer el Acuerdo de usuario y la Política de privacidad completos.</string>
+    <string name="rCN_first_launch_confirmation_agree">Aceptar y continuar</string>
+    <string name="rCN_first_launch_title">Notificación de Acuerdo del usuario y Política de privacidad</string>
+    <string name="rCN_first_launch_clickable_terms_text">Acuerdo del Usuario</string>
+    <string name="rCN_first_launch_body">¡Bienvenidos a “Wolvic”!
+\n
+\nRegistrarte y usar \"Wolvic\" requiere que aceptes el Acuerdo del usuario y la Política de privacidad, o de lo contrario no podemos brindarle servicios. Lee detenidamente la información y haz clic en \"Aceptar\" para continuar. Si hazes clic en \"No estoy de acuerdo\", no podrás continuar usando \"Wolvic\".
+\n
+\nPuedes leer el Acuerdo de usuario y la Política de privacidad completos.</string>
+    <string name="rCN_first_launch_confirmation_disagree">No aceptar y salir</string>
+    <string name="keyboardview_keycode_cancel">Cancelar</string>
+    <string name="keyboardview_keycode_delete">Borrar</string>
+    <string name="keyboardview_keycode_done">Hecho</string>
+    <string name="keyboardview_keycode_mode_change">Cambio de modo</string>
+    <string name="keyboardview_keycode_enter">Intro</string>
+    <string name="keyboardview_keycode_alt">Alt</string>
+    <string name="keyboardview_keycode_shift">Shift</string>
+    <string name="developer_options_clear_user_data_description">Todos los datos del usuario</string>
+    <string name="security_options_use_system_root_ca">Utilizar los certificados raíz de confianza del sistema</string>
+    <string name="video_mode_3d_top_bottom">3D Top Bottom</string>
+    <string name="clear_user_data_dialog_title">Borrar datos del usuario de %1$s</string>
+    <string name="clear_user_data_dialog_text">%1$s se restablecerá. Todos los datos, incluidos los inicios de sesión guardados, el historial y los marcadores, se eliminarán permanentemente si no se han sincronizado. %1$s se cerrará automáticamente una vez finalizado el restablecimiento. ¿Quieres continuar?</string>
+    <string name="display_options_start_with_passthrough">Usar el modo Passthrough al iniciar</string>
+    <string name="tray_wifi_unavailable_ssid">SSID no disponible</string>
+    <string name="voice_input_start">¿Qué te gustaría introducir?</string>
+    <string name="display_options_latin_auto_complete">Autocompletado con el teclado latino</string>
+    <string name="display_options_head_lock">Activar Head Lock</string>
+    <string name="controller_options_haptic_feedback">Feedback táctil</string>
+    <string name="move_tooltip">Mover</string>
+    <string name="deprecated_version_dialog_title">El soporte finaliza pronto</string>
+    <string name="display_options_sound_effect">Usar efectos de sonido</string>
+    <string name="display_options_windows_distance">Distancia de las ventanas</string>
+    <string name="experimental_features">Funcionalidades experimentales</string>
+    <string name="device_name">%1$s en %2$s</string>
+    <string name="fxa_account_options_device_name">Nombre del dispositivo</string>
+    <string name="deprecated_version_dialog_body">Esta versión de desarrollo de Wolvic dejará de estar disponible a finales de octubre de 2023.
+\n
+\nPor favor, instala una versión reciente de Wolvic desde la tienda de Meta.
+\n
+\nIMPORTANTE: a no ser que tengas activado Firefox Sync, le nueva versión de Wolvic no tendrá tus marcadores ni tus páginas abiertas.</string>
+    <string name="permission_rationale_title">Permisos adicionales</string>
+    <string name="permission_camera_rationale">Capturar imágenes del mundo que te rodea requiere permiso para usar tu cámara.</string>
+    <string name="permission_microphone_rationale">Realizar búsquedas por voz e ingresar texto requiere permiso para usar su micrófono.</string>
+    <string name="permission_camera_and_microphone_rationale">Proporcionar servicios como videoconferencias requiere permiso para usar su cámara y micrófono.</string>
+    <string name="permission_location_rationale">Ofrecer noticias y contenidos cercanos requiere permiso para acceder a su ubicación.</string>
+    <string name="permission_persistent_storage_rationale">Guardar y abrir archivos en su dispositivo requiere permiso para almacenar datos en un almacenamiento persistente.</string>
+    <string name="tray_status_phone">Teléfono: %1$s</string>
+    <string name="permission_read_external_storage_rationale">Abrir archivos en su dispositivo requiere permiso para leer su almacenamiento externo.</string>
+    <string name="permission_notification_rationale">Para poder notificarle noticias y actualizaciones, se requiere permiso para enviar notificaciones.</string>
+    <string name="hamburger_menu_zoom">Zoom</string>
+    <string name="phone_ui_set3dmode_alert_dialog_description">No se pudo cambiar al modo 3D. Intente desconectar las gafas, volver a conectarlas y reiniciar Wolvic.</string>
+    <string name="vision_glass_error_message">Hubo un error.
+\nPor favor, inténtalo de nuevo.</string>
+    <string name="vision_glass_touchpad_instructions">Toque para hacer clic. Desliza para desplazarte</string>
+    <string name="phone_ui_alert_dialog_title">Error</string>
+    <string name="phone_ui_usb_alert_dialog_description">No se pudieron obtener permisos USB. Intente desconectar las gafas, volver a conectarlas y reiniciar Wolvic.</string>
+    <string name="vision_glass_disconnected_message">Por favor, conecte Vision Glass</string>
+    <string name="incompatible_os_version_title">Versión no soportada</string>
+    <string name="incompatible_os_version_message">La versión actual del sistema no está soportada. Wolvic requiere al menos la versión %1$s</string>
+    <string name="controller_options_handtracking">Seguimiento de manos</string>
+    <string name="tabs_bookmark_selected">Añadir a marcadores</string>
+    <string name="vision_glass_realign_dialog_explanation">Para configurar el controlador, apunte su teléfono hacia adelante y toque el botón.</string>
+    <string name="developer_options_pointer_mode_tracked_pointer">Con el controlador o la mano</string>
+    <string name="controller_options_pointer_mode">Modo de control del puntero</string>
+    <string name="developer_options_pointer_mode_tracked_eye">Con la mirada</string>
+    <string name="eye_tracking_permission_title">Permisos de seguimiento ocular</string>
+    <string name="eye_tracking_permission_message">Habilitar el seguimiento ocular para navegar por la web plantea riesgos significativos de privacidad. Esta tecnología captura dónde y cuánto tiempo un usuario mira partes específicas de una página web, revelando detalles íntimos sobre sus intereses y reacciones emocionales. Los anunciantes y terceros pueden explotar estos datos para el marketing intrusivo y la elaboración de perfiles. Además, los patrones de movimiento del ojo podrían deducir información sensible como condiciones médicas, estados cognitivos o hábitos personales. Por lo tanto, es crucial considerar las implicaciones de la privacidad antes de conceder acceso a la información de seguimiento ocular a páginas web.</string>
+    <string name="display_options_tabs_location">Ubicación de las pestañas</string>
+    <string name="display_options_tabs_location_tray">Panel</string>
+    <string name="display_options_tabs_location_horizontal">Horizontal</string>
+    <string name="settings_window_size">Tamaño predeterminado de la ventana</string>
+    <string name="window_size_preset">%1$d×%2$d</string>
+    <string name="download_addon_install_blocked_permissions_body">Permita los permisos de almacenamiento en Opciones de privacidad para continuar.</string>
+    <string name="display_options_tabs_location_vertical">Vertical</string>
 </resources>

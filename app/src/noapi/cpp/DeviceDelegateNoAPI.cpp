@@ -166,6 +166,11 @@ DeviceDelegateNoAPI::SetReorientTransform(const vrb::Matrix& aMatrix) {
 }
 
 void
+DeviceDelegateNoAPI::Reorient(const vrb::Matrix&, ReorientMode) {
+  // Ignore reorient
+}
+
+void
 DeviceDelegateNoAPI::SetClearColor(const vrb::Color& aColor) {
   m.clearColor = aColor;
 }
@@ -181,7 +186,7 @@ DeviceDelegateNoAPI::SetClipPlanes(const float aNear, const float aFar) {
 void
 DeviceDelegateNoAPI::SetControllerDelegate(ControllerDelegatePtr& aController) {
   m.controller = aController;
-  m.controller->CreateController(kControllerIndex, -1, "Oculus Touch (Right)"); // "Firefox Reality Virtual Controller");
+  m.controller->CreateController(kControllerIndex, -1, "Oculus Touch (Right)"); // "Wolvic Virtual Controller");
   m.controller->SetEnabled(kControllerIndex, true);
   m.controller->SetCapabilityFlags(kControllerIndex, device::Orientation | device::Position);
   m.controller->SetButtonCount(kControllerIndex, 5);
@@ -218,6 +223,7 @@ DeviceDelegateNoAPI::StartFrame(const FramePrediction aPrediction) {
   VRB_GL_CHECK(glEnable(GL_CULL_FACE));
   VRB_GL_CHECK(glEnable(GL_BLEND));
   VRB_GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+  mShouldRender = true;
   if (m.controller) {
     vrb::RenderContextPtr context = m.context.lock();
     if (context) {
@@ -315,10 +321,12 @@ DeviceDelegateNoAPI::MoveAxis(const float aX, const float aY, const float aZ) {
     m.pitch = 0.0f;
     m.headingMatrix = vrb::Matrix::Identity();
     m.pitchMatrix = vrb::Matrix::Identity();
+    ProcessEvents();
     return;
   }
   VRB_LOG("pos: %s heading: %f pitch: %f", m.position.ToString().c_str(), m.heading, m.pitch);
   m.position += m.headingMatrix.MultiplyDirection(vrb::Vector(aX, aY, aZ));
+  ProcessEvents();
 }
 
 void
@@ -326,6 +334,7 @@ DeviceDelegateNoAPI::RotateHeading(const float aHeading) {
   static const vrb::Vector sUp(0.0f, 1.0f, 0.0f);
   m.heading += aHeading;
   m.headingMatrix = vrb::Matrix::Rotation(sUp, m.heading);
+  ProcessEvents();
 }
 
 void
@@ -333,6 +342,7 @@ DeviceDelegateNoAPI::RotatePitch(const float aPitch) {
   static const vrb::Vector sLeft(1.0f, 0.0f, 0.0f);
   m.pitch += aPitch;
   m.pitchMatrix = vrb::Matrix::Rotation(sLeft, m.pitch);
+  ProcessEvents();
 }
 
 static float

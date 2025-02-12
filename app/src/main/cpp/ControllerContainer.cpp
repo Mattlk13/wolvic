@@ -6,6 +6,9 @@
 #include "ControllerContainer.h"
 #include "Controller.h"
 #include "Pointer.h"
+#include "Quad.h"
+#include "DeviceUtils.h"
+#include "tiny_gltf.h"
 
 #include "vrb/ConcreteClass.h"
 #include "vrb/Color.h"
@@ -17,10 +20,13 @@
 #include "vrb/Program.h"
 #include "vrb/ProgramFactory.h"
 #include "vrb/RenderState.h"
+#include "vrb/TextureGL.h"
 #include "vrb/Toggle.h"
 #include "vrb/Transform.h"
 #include "vrb/Vector.h"
 #include "vrb/VertexArray.h"
+
+#include <assert.h>
 
 using namespace vrb;
 
@@ -178,12 +184,90 @@ ControllerContainer::InitializeBeam() {
   index.push_back(5);
   geometry->AddFace(index, uvIndex, index);
 
+  index.clear();
+  index.push_back(1);
+  index.push_back(2);
+  index.push_back(3);
+  index.push_back(4);
+  geometry->AddFace(index, uvIndex, index);
+
   m.beamModel = std::move(geometry);
   for (Controller& controller: m.list) {
     if (controller.beamParent) {
       controller.beamParent->AddNode(m.beamModel);
     }
   }
+}
+
+void ControllerContainer::SetHandJointLocations(const int32_t aControllerIndex, std::vector<vrb::Matrix> jointTransforms,
+                                                std::vector<float> jointRadii)
+{
+    if (!m.Contains(aControllerIndex))
+        return;
+
+    Controller &controller = m.list[aControllerIndex];
+    if (!m.root)
+        return;
+
+    controller.handJointTransforms = std::move(jointTransforms);
+    controller.handJointRadii = std::move(jointRadii);
+
+    // Initialize left and right hands action button, which for now triggers back navigation
+    // and exit app respectively.
+    // Note that Quest's runtime already shows the hamburger menu button when left
+    // hand is facing head and the system menu for the right hand gesture.
+#if !defined(OCULUSVR)
+    if (controller.handActionButtonToggle == nullptr) {
+        CreationContextPtr create = m.context.lock();
+
+        TextureGLPtr texture = create->LoadTexture(controller.leftHanded ? "menu.png" : "exit.png") ;
+        assert(texture);
+        texture->SetTextureParameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        texture->SetTextureParameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+        const float iconWidth = 0.03f;
+        const float aspect = (float)texture->GetWidth() / (float)texture->GetHeight();
+
+        QuadPtr icon = Quad::Create(create, iconWidth, iconWidth / aspect, nullptr);
+        icon->SetTexture(texture, texture->GetWidth(), texture->GetHeight());
+        icon->UpdateProgram("");
+
+        controller.handActionButtonToggle = Toggle::Create(create);
+        controller.handActionButtonTransform = Transform::Create(create);
+        controller.handActionButtonToggle->AddNode(controller.handActionButtonTransform);
+        controller.handActionButtonTransform->AddNode(icon->GetRoot());
+        controller.handActionButtonToggle->ToggleAll(false);
+        m.root->AddNode(controller.handActionButtonToggle);
+    }
+#endif
+}
+
+void ControllerContainer::SetMode(const int32_t aControllerIndex, ControllerMode aMode)
+{
+  if (!m.Contains(aControllerIndex))
+    return;
+  m.list[aControllerIndex].mode = aMode;
+}
+
+void ControllerContainer::SetSelectFactor(const int32_t aControllerIndex, float aFactor)
+{
+  if (!m.Contains(aControllerIndex))
+    return;
+  m.list[aControllerIndex].selectFactor = aFactor;
+}
+
+void ControllerContainer::SetAimEnabled(const int32_t aControllerIndex, bool aEnabled) {
+    if (!m.Contains(aControllerIndex))
+        return;
+    m.list[aControllerIndex].hasAim = aEnabled;
+}
+
+void ControllerContainer::SetHandActionEnabled(const int32_t aControllerIndex, bool aEnabled) {
+    if (!m.Contains(aControllerIndex))
+        return;
+    m.list[aControllerIndex].handActionEnabled = aEnabled;
+    if (m.list[aControllerIndex].handActionButtonToggle)
+        m.list[aControllerIndex].handActionButtonToggle->ToggleAll(aEnabled);
 }
 
 void
@@ -238,7 +322,10 @@ ControllerContainer::CreateController(const int32_t aControllerIndex, const int3
 
   if (aControllerIndex != m.gazeIndex) {
     if ((m.models.size() >= aModelIndex) && m.models[aModelIndex]) {
-      controller.transform->AddNode(m.models[aModelIndex]);
+      controller.modelToggle = vrb::Toggle::Create(create);
+      controller.modelToggle->AddNode(m.models[aModelIndex]);
+      controller.transform->AddNode(controller.modelToggle);
+      controller.modelToggle->ToggleAll(true);
       controller.beamToggle = vrb::Toggle::Create(create);
       controller.beamToggle->ToggleAll(true);
       vrb::TransformPtr beamTransform = Transform::Create(create);
@@ -325,10 +412,10 @@ ControllerContainer::SetEnabled(const int32_t aControllerIndex, const bool aEnab
   m.list[aControllerIndex].enabled = aEnabled;
   if (!aEnabled) {
     m.list[aControllerIndex].focused = false;
+    SetMode(aControllerIndex, ControllerMode::None);
   }
   m.SetVisible(m.list[aControllerIndex], aEnabled);
 }
-
 
 void
 ControllerContainer::SetControllerType(const int32_t aControllerIndex, device::DeviceType aType) {
@@ -358,6 +445,15 @@ ControllerContainer::SetTransform(const int32_t aControllerIndex, const vrb::Mat
   if (controller.transform) {
     controller.transform->SetTransform(aTransform);
   }
+}
+
+void
+ControllerContainer::TranslateTransform(const int32_t aControllerIndex, const vrb::Vector &aTranslation) {
+    if (!m.Contains(aControllerIndex)) {
+        return;
+    }
+    Controller& controller = m.list[aControllerIndex];
+    SetTransform(aControllerIndex, controller.transformMatrix.Translate(aTranslation));
 }
 
 void

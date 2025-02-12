@@ -65,7 +65,11 @@ struct SplashAnimation::State {
     layer->Bind(GL_DRAW_FRAMEBUFFER);
     read->Bind(GL_READ_FRAMEBUFFER);
     VRB_GL_CHECK(glBlitFramebuffer(0, 0, aTexture->GetWidth(), aTexture->GetHeight(),
+#if PICOXR
+                                   0, aTexture->GetHeight(), aTexture->GetWidth(), 0,
+#else
                                    0, 0, aTexture->GetWidth(), aTexture->GetHeight(),
+#endif
                                    GL_COLOR_BUFFER_BIT, GL_LINEAR));
     layer->Unbind();
     read->Unbind();
@@ -79,6 +83,9 @@ SplashAnimation::Load(vrb::RenderContextPtr& aContext, const DeviceDelegatePtr& 
     return;
   }
   vrb::CreationContextPtr create = m.context.lock();
+#if OCULUSVR || PICOXR
+  VRB_GL_CHECK(glDisable(GL_FRAMEBUFFER_SRGB_EXT));
+#endif
   vrb::TextureGLPtr texture = create->LoadTexture("logo.png");
   texture->SetTextureParameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   texture->SetTextureParameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR);

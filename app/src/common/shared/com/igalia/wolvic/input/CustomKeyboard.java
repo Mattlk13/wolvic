@@ -8,7 +8,6 @@ package com.igalia.wolvic.input;
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
-import android.inputmethodservice.Keyboard;
 import android.view.KeyEvent;
 
 import java.lang.reflect.Field;
@@ -49,11 +48,9 @@ public class CustomKeyboard extends Keyboard {
         int mDefaultHorizontalGap = getParentFieldInt(this, "mDefaultHorizontalGap");
         int mDefaultVerticalGap = verticalGap >= 0 ? verticalGap : getParentFieldInt(this, "mDefaultVerticalGap");
         int mDisplayWidth = getParentFieldInt(this, "mDisplayWidth");
-        ArrayList<Row> rows = null;
         Object rowsObj = getParentFieldObject(this, "rows");
-        if (rowsObj != null && rowsObj instanceof ArrayList) {
-            rows = (ArrayList<Row>)rowsObj;
-        }
+        @SuppressWarnings("unchecked")
+        ArrayList<Row> rows = rowsObj instanceof ArrayList ? (ArrayList<Row>) rowsObj : null;
 
         int rowsNum = (int)Math.ceil((characters.length()+0.1)/columns);
         final int maxColumns = columns == -1 ? Integer.MAX_VALUE : columns;
@@ -69,7 +66,7 @@ public class CustomKeyboard extends Keyboard {
         }
         for (int i = 0; i < characters.length(); i++) {
             char c = characters.charAt(i);
-            int rowIndex = (int)Math.floor(i/columns);
+            int rowIndex = i / columns;
 
             final Key key = new Key(mRows[rowIndex]);
 
@@ -91,10 +88,9 @@ public class CustomKeyboard extends Keyboard {
             getKeys().add(key);
             Object keysObj = getFieldObject(mRows[rowIndex], "mKeys");
             if (keysObj != null && getFieldObject(mRows[rowIndex], "mKeys") instanceof ArrayList) {
+                @SuppressWarnings("unchecked")
                 ArrayList<Key> mKeys = (ArrayList<Key>) keysObj;
-                if (mKeys != null) {
-                    mKeys.add(key);
-                }
+                mKeys.add(key);
             }
             int mTotalWidth = getParentFieldInt(this, "mTotalWidth");
             if (x > mTotalWidth) {
@@ -146,8 +142,7 @@ public class CustomKeyboard extends Keyboard {
         Class<?> tmpClass = clazz;
         do {
             try {
-                Field f = tmpClass.getDeclaredField(fieldName);
-                return f;
+                return tmpClass.getDeclaredField(fieldName);
             } catch (NoSuchFieldException e) {
                 tmpClass = tmpClass.getSuperclass();
             }
@@ -189,7 +184,7 @@ public class CustomKeyboard extends Keyboard {
     @Override
     public int[] getNearestKeys(int x, int y) {
         List<Key> keys = getKeys();
-        Key[] mKeys = keys.toArray(new Key[keys.size()]);
+        Key[] mKeys = keys.toArray(new Key[0]);
         int i = 0;
         for (Key key : mKeys) {
             if(key.isInside(x, y))

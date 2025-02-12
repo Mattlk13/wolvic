@@ -5,6 +5,7 @@ import android.graphics.Matrix;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.igalia.wolvic.BuildConfig;
 import com.igalia.wolvic.browser.api.WContentBlocking;
 import com.igalia.wolvic.browser.api.WDisplay;
 import com.igalia.wolvic.browser.api.WMediaSession;
@@ -18,6 +19,8 @@ import com.igalia.wolvic.browser.api.WTextInput;
 import org.mozilla.geckoview.GeckoSession;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.List;
 
 public class SessionImpl implements WSession {
     private @NonNull GeckoSession mSession;
@@ -35,6 +38,12 @@ public class SessionImpl implements WSession {
     private TextInputImpl mTextInput;
     private PanZoomControllerImpl mPanZoomController;
     private Method mGeckoLocationMethod;
+    private UrlUtilsVisitor mUrlUtilsVisitor;
+
+    // The difference between "Mobile" and "VR" matches GeckoViewSettings.jsm
+    private static final String WOLVIC_USER_AGENT_MOBILE = GeckoSession.getDefaultUserAgent() + " Wolvic/" + BuildConfig.VERSION_NAME;
+    private static final String WOLVIC_USER_AGENT_VR = WOLVIC_USER_AGENT_MOBILE.replace("Mobile", "Mobile VR");
+    private static final String WOLVIC_USER_AGENT_DESKTOP = "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0";
 
     public SessionImpl(@Nullable WSessionSettings settings) {
         if (settings == null) {
@@ -125,6 +134,26 @@ public class SessionImpl implements WSession {
         return mSettings;
     }
 
+    @NonNull
+    @Override
+    public String getDefaultUserAgent(int mode) {
+        switch (mode) {
+            case WSessionSettings.USER_AGENT_MODE_DESKTOP:
+                return WOLVIC_USER_AGENT_DESKTOP;
+            case WSessionSettings.USER_AGENT_MODE_VR:
+                return WOLVIC_USER_AGENT_VR;
+            case WSessionSettings.USER_AGENT_MODE_MOBILE:
+            default:
+                return WOLVIC_USER_AGENT_MOBILE;
+        }
+    }
+
+    @NonNull
+    @Override
+    public SessionFinder getSessionFinder() {
+        return new SessionFinderImpl(mSession.getFinder());
+    }
+
     @Override
     public void exitFullScreen() {
         mSession.exitFullScreen();
@@ -194,6 +223,15 @@ public class SessionImpl implements WSession {
     public WTextInput getTextInput() {
         return mTextInput;
     }
+
+    @Override
+    public void pageZoomIn() {}
+
+    @Override
+    public void pageZoomOut() {}
+
+    @Override
+    public int getCurrentZoomLevel() { return 0; }
 
     @NonNull
     @Override
@@ -373,5 +411,19 @@ public class SessionImpl implements WSession {
             result |= GeckoSession.LOAD_FLAGS_BYPASS_CLASSIFIER;
         }
         return result;
+    }
+
+    @Override
+    public UrlUtilsVisitor getUrlUtilsVisitor() {
+        if (mUrlUtilsVisitor == null) {
+            mUrlUtilsVisitor = new UrlUtilsVisitor() {
+                private final List<String> ENGINE_SUPPORTED_SCHEMES = Arrays.asList("about", "data", "file", "ftp", "http", "https", "moz-extension", "moz-safe-about", "resource", "view-source", "ws", "wss", "blob");
+                @Override
+                public boolean isSupportedScheme(@NonNull String scheme) {
+                    return ENGINE_SUPPORTED_SCHEMES.contains(scheme);
+                }
+            };
+        }
+        return mUrlUtilsVisitor;
     }
 }

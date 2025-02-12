@@ -10,6 +10,7 @@
 #include "Device.h"
 #include "vrb/Forward.h"
 #include "vrb/Matrix.h"
+#include "vrb/Transform.h"
 
 namespace crow {
 
@@ -23,6 +24,7 @@ struct Controller {
   int32_t index;
   bool enabled;
   bool focused;
+  ControllerMode mode = ControllerMode::None;
   uint32_t widget;
   float pointerX;
   float pointerY;
@@ -40,6 +42,14 @@ struct Controller {
   float scrollDeltaY;
   vrb::TransformPtr transform;
   vrb::TogglePtr beamToggle;
+  vrb::TogglePtr modelToggle;
+  std::vector<vrb::Matrix>handJointTransforms;
+  std::vector<float>handJointRadii;
+  bool hasAim;
+  bool handActionEnabled;
+  vrb::TogglePtr handActionButtonToggle;
+  vrb::TransformPtr handActionButtonTransform;
+  float selectFactor;
   vrb::TransformPtr beamParent;
   PointerPtr pointer;
   vrb::Matrix transformMatrix;

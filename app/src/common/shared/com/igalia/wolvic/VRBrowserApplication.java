@@ -5,9 +5,11 @@
 
 package com.igalia.wolvic;
 
+import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.os.StrictMode;
 
 import androidx.annotation.NonNull;
 
@@ -29,6 +31,7 @@ import com.igalia.wolvic.ui.widgets.AppServicesProvider;
 import com.igalia.wolvic.utils.BitmapCache;
 import com.igalia.wolvic.utils.ConnectivityReceiver;
 import com.igalia.wolvic.utils.EnvironmentsManager;
+import com.igalia.wolvic.utils.DictionariesManager;
 import com.igalia.wolvic.utils.LocaleUtils;
 
 public class VRBrowserApplication extends Application implements AppServicesProvider {
@@ -43,8 +46,10 @@ public class VRBrowserApplication extends Application implements AppServicesProv
     private DownloadsManager mDownloadsManager;
     private SpeechRecognizer mSpeechRecognizer;
     private EnvironmentsManager mEnvironmentsManager;
+    private DictionariesManager mDictionariesManager;
     private Addons mAddons;
     private ConnectivityReceiver mConnectivityManager;
+    private Activity mCurrentActivity;
 
     protected void onActivityCreate(@NonNull Context activityContext) {
         onConfigurationChanged(activityContext.getResources().getConfiguration());
@@ -54,7 +59,7 @@ public class VRBrowserApplication extends Application implements AppServicesProv
         mConnectivityManager.init();
         mPlaces = new Places(activityContext);
         mServices = new Services(activityContext, mPlaces);
-        mLoginStorage = new LoginStorage(this);
+        mLoginStorage = new LoginStorage(activityContext);
         mAccounts = new Accounts(activityContext);
         mSessionStore = SessionStore.get();
         mSessionStore.initialize(activityContext);
@@ -64,20 +69,16 @@ public class VRBrowserApplication extends Application implements AppServicesProv
         mBitmapCache = new BitmapCache(activityContext, mAppExecutors.diskIO(), mAppExecutors.mainThread());
         mEnvironmentsManager = new EnvironmentsManager(activityContext);
         mEnvironmentsManager.init();
+        mDictionariesManager = new DictionariesManager(activityContext);
+        mDictionariesManager.init();
         mAddons = new Addons(activityContext, mSessionStore);
-
-        try {
-            String speechService = SettingsStore.getInstance(activityContext).getVoiceSearchService();
-            setSpeechRecognizer(SpeechServices.getInstance(activityContext, speechService));
-        } catch (ReflectiveOperationException e) {
-            e.printStackTrace();
-        }
     }
 
     protected void onActivityDestroy() {
         mConnectivityManager.end();
         mDownloadsManager.end();
         mEnvironmentsManager.end();
+        mDictionariesManager.end();
     }
 
     @Override
@@ -85,8 +86,27 @@ public class VRBrowserApplication extends Application implements AppServicesProv
         Context context = LocaleUtils.init(this);
         Language language = LocaleUtils.getDisplayLanguage(context);
         newConfig.setLocale(language.getLocale());
+        // TODO: Deprecated updateConfiguration(Configuration,DisplayMetrics),
+        //  see https://github.com/Igalia/wolvic/issues/797
         getApplicationContext().getResources().updateConfiguration(newConfig, getBaseContext().getResources().getDisplayMetrics());
         super.onConfigurationChanged(newConfig);
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        // TODO: eventually add .penaltyDeath() to the policies once we have fixed all the issues.
+        if (BuildConfig.DEBUG) {
+            StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
+                    .detectAll()
+                    .penaltyLog()
+                    .build());
+
+            StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
+                    .detectAll()
+                    .penaltyLog()
+                    .build());
+        }
     }
 
     public Services getServices() {
@@ -140,6 +160,11 @@ public class VRBrowserApplication extends Application implements AppServicesProv
     }
 
     @Override
+    public DictionariesManager getDictionariesManager() {
+        return mDictionariesManager;
+    }
+
+    @Override
     public Addons getAddons() {
         return mAddons;
     }
@@ -153,4 +178,8 @@ public class VRBrowserApplication extends Application implements AppServicesProv
     public ConnectivityReceiver getConnectivityReceiver() {
         return mConnectivityManager;
     }
+
+    public Activity getCurrentActivity() { return mCurrentActivity; }
+
+    public void setCurrentActivity(Activity activity) { mCurrentActivity = activity; }
 }

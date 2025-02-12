@@ -3,7 +3,6 @@ package com.igalia.wolvic.addons.views;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -23,7 +22,6 @@ import com.igalia.wolvic.ui.widgets.prompts.PromptData;
 import com.igalia.wolvic.utils.SystemUtils;
 
 import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
 
 import mozilla.components.concept.engine.webextension.EnableSource;
 import mozilla.components.feature.addons.Addon;
@@ -114,21 +112,11 @@ public class AddonOptionsView extends RecyclerView.ViewHolder implements AddonOp
     }
 
     private void showRemoveAddonSuccessDialog(@NonNull Addon addon) {
-        String permissionsHtml = addon.translatePermissions(mContext).stream()
-                .map(str -> {
-                    return "<li>&nbsp;" + str + "</li>";
-                })
-                .sorted()
-                .collect(Collectors.joining());
         PromptData data = new PromptData.Builder()
                 .withIconRes(R.drawable.ic_icon_addons)
                 .withTitle(mContext.getString(
                         R.string.addons_remove_success_dialog_title,
-                        ExtensionsKt.getTranslatedName(addon)))
-                .withBody(mContext.getString(
-                        R.string.addons_install_dialog_body,
-                        permissionsHtml))
-                .withBodyGravity(Gravity.START)
+                        ExtensionsKt.translateName(addon, mContext)))
                 .withBtnMsg(new String[]{
                         mContext.getString(R.string.addons_remove_success_dialog_ok)
                 })
@@ -141,7 +129,7 @@ public class AddonOptionsView extends RecyclerView.ViewHolder implements AddonOp
                 .withIconRes(R.drawable.ic_icon_addons)
                 .withTitle(mContext.getString(
                         R.string.addons_remove_error_dialog_title,
-                        ExtensionsKt.getTranslatedName(addon)))
+                        ExtensionsKt.translateName(addon, mContext)))
                 .withBtnMsg(new String[]{
                         mContext.getString(R.string.addons_remove_error_dialog_ok)
                 })

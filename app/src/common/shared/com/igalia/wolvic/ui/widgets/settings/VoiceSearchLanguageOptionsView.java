@@ -21,6 +21,7 @@ import com.igalia.wolvic.ui.widgets.WidgetPlacement;
 import com.igalia.wolvic.utils.LocaleUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 class VoiceSearchLanguageOptionsView extends SettingsView {
@@ -44,7 +45,7 @@ class VoiceSearchLanguageOptionsView extends SettingsView {
         LayoutInflater inflater = LayoutInflater.from(getContext());
         SpeechRecognizer speechRecognizer = mWidgetManager.getServicesProvider().getSpeechRecognizer();
 
-        mSupportedLanguages = speechRecognizer.getSupportedLanguages();
+        mSupportedLanguages = (speechRecognizer != null) ? speechRecognizer.getSupportedLanguages() : Collections.emptyList();
 
         // Inflate this data binding layout
         mBinding = DataBindingUtil.inflate(inflater, R.layout.options_language_voice, this, true);

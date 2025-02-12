@@ -79,7 +79,7 @@ public class AddonOptionsDetailsView extends RecyclerView.ViewHolder implements 
             // If the addon is not installed we set the homepage link
             mBinding.homepage.setOnClickListener(view -> {
                 view.requestFocusFromTouch();
-                mWidgetManager.openNewTabForeground(mBinding.getAddon().getSiteUrl());
+                mWidgetManager.openNewTabForeground(mBinding.getAddon().getHomepageUrl());
             });
 
             bindTranslatedDescription(mBinding.addonDescription, addon);
@@ -98,7 +98,7 @@ public class AddonOptionsDetailsView extends RecyclerView.ViewHolder implements 
     private void bindTranslatedDescription(@NonNull TextView view, Addon addon) {
         String detailsText = view.getContext().getString(R.string.addons_no_description);
         if (addon != null) {
-            detailsText = ExtensionsKt.getTranslatedDescription(addon);
+            detailsText = ExtensionsKt.translateDescription(addon, mContext);
         }
         String parsedText = detailsText.replace("\n", "<br/>");
         Spanned text = HtmlCompat.fromHtml(parsedText, HtmlCompat.FROM_HTML_MODE_COMPACT);
@@ -133,9 +133,7 @@ public class AddonOptionsDetailsView extends RecyclerView.ViewHolder implements 
     private void bindAuthors(@NonNull TextView view, Addon addon) {
         String text = view.getContext().getString(R.string.addons_no_authors);
         if (addon != null) {
-            String authors = addon.getAuthors().stream()
-                    .map(Addon.Author::getName)
-                    .collect(Collectors.joining( "," ));
+            String authors = addon.getAuthor().getName();
             if (!authors.isEmpty()) {
                 text = authors;
             }
@@ -152,7 +150,7 @@ public class AddonOptionsDetailsView extends RecyclerView.ViewHolder implements 
     private void bindRatingBar(@NonNull RatingBar view, Addon addon) {
         if (addon != null && addon.getRating() != null) {
             view.setRating(addon.getRating().getAverage());
-            view.setContentDescription(String.format(view.getResources().getString(R.string.mozac_feature_addons_rating_content_description),
+            view.setContentDescription(String.format(view.getResources().getString(R.string.mozac_feature_addons_rating_content_description_2),
                     addon.getRating().getAverage()));
         }
     }

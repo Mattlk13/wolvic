@@ -103,8 +103,9 @@
     <string name="private_browsing_body"><![CDATA[<p>Cando navegas nunha xanela privada, %1$s <strong>non garda</strong>:</p><ul class="two-column"><li>Páxinas visitadas</li><li>Buscas</li><li>Cookies</li><li>Arquivos temporais</li></ul><p>A navegación privada <strong>non garante o anonimato</strong> en Internet. O empregador ou o servizo que proporciona conexión a Internet pode saber que páxinas foron visitadas.</p><p class="about-info">Saber máis sobre <a id="learnMore">navegación privada</a>.</p>]]></string>
     <string name="voice_samples_collect_dialog_description2"><![CDATA[Para mellorar o recoñecemento de voz e outros servizos, precisamos recoller fragmentos de voz para investigación. Almacenamos os datos de xeito seguro e sen identificar información. Sempre será posible usar a busca por voz, mesmo se non se permite a recolección. <a href="">Saber máis</a>]]></string>
     <string name="hamburger_menu_tooltip">Menú</string>
+    <string name="move_tooltip">Mover</string>
     <string name="hamburger_menu_switch_to_desktop">Modo escritorio</string>
-    <string name="whats_new_body_1">Inicie sesión ou cree unha nova Firefox Account para enviar pestanas dende o escritorio ou móbil ao dispositivo XR.</string>
+    <string name="whats_new_body_1">Inicie sesión ou cree unha nova Mozilla Account para enviar pestanas dende o escritorio ou móbil ao dispositivo XR.</string>
     <string name="tracking_dialog_message"><![CDATA[A protección mellorada de seguimento está %1$s para esta páxina web. <a href="%2$s">Saber máis</a>]]></string>
     <string name="exit_confirm_dialog_body">Seguro que quere saír de %1$s\?</string>
     <string name="download_delete_all_confirm_body">Seguro que quere borrar todos os arquivos descargados\?</string>
@@ -128,7 +129,7 @@
     <string name="keyboard_enter_label">ENTER</string>
     <string name="keyboard_go_label">IR</string>
     <string name="keyboard_search_label">BUSCAR</string>
-    <string name="keyboard_space_label">espacio</string>
+    <string name="keyboard_space_label">espazo</string>
     <string name="permission_allow">Permitir</string>
     <string name="permission_reject">Non permitir</string>
     <string name="permission_enable">Habilitar</string>
@@ -173,6 +174,7 @@
     <string name="settings_accounts_reconnect">Reconectar</string>
     <string name="settings_whats_new">Novidades</string>
     <string name="developer_options_curved_display">Activar display curvo</string>
+    <string name="developer_options_center_windows">Centrar verticalmente as xanelas</string>
     <string name="developer_options_remote_debugging">Activar depuración remota</string>
     <string name="developer_options_debug_logging">Activar logging de depuración</string>
     <string name="hardware_acceleration_switch">Activar aceleración hardware da interface</string>
@@ -214,16 +216,19 @@
     <string name="fxa_account_last_no_synced">Non sincronizado aínda</string>
     <string name="fxa_account_syncing_off">Sincronización desactivada</string>
     <string name="fxa_account_last_synced">Última sincronización fai %1$d minutos</string>
+    <string name="fxa_account_options_device_name">Nome do dispositivo</string>
+    <string name="device_name">%1$s en %2$s</string>
     <string name="security_options_restore_tabs">Restaurar pestanas e xanelas ao reiniciar</string>
     <string name="security_options_autocomplete">Autocompletado na barra de enderezos</string>
     <string name="security_options_login_autofill">Autocompletado</string>
-    <string name="security_options_login_sync">Sincronizar inicios de sesión con Firefox Accounts</string>
+    <string name="security_options_login_sync">Sincronizar inicios de sesión con Mozilla Accounts</string>
     <string name="security_options_login_fxa">Conta…</string>
     <string name="security_options_login_exceptions">Excepcións…</string>
     <string name="security_options_tracking_protection">Protección de tracking</string>
     <string name="security_options_permissions_title">Permisos (Permitir a %1$s acceder a)</string>
     <string name="security_options_permissions_reject_message">Este permiso só se pode desactivar nos permisos do sistema</string>
     <string name="security_options_permission_location">Localización</string>
+    <string name="security_options_permission_fine_location_warning">Wolvic só pode acceder á túa ubicación aproximada. Podes mudar isto nos axustes do sistema.</string>
     <string name="security_options_permission_storage">Almacenamento</string>
     <string name="security_options_permission_camera_and_microphone">Cámara e micrófono</string>
     <string name="security_options_block_pup_up_windows">Bloquear xanelas pop-up</string>
@@ -231,7 +236,7 @@
     <string name="security_options_permission_webxr">Dispositivos de realidade virtual (WebXR)</string>
     <string name="security_options_webxr_settings">Avanzado</string>
     <string name="security_options_crash_reports_send_data">Permitir a %1$s enviar informes de erros automáticos</string>
-    <string name="security_options_telemetry_send_data">Permitir a %1$s enviar datos técnicos e de interacción a Mozilla</string>
+    <string name="security_options_telemetry_send_data">Permitir a %1$s enviar datos técnicos e de interacción a Huawei</string>
     <string name="sync">Sincronización</string>
     <string name="on">Activado</string>
     <string name="off">Desactivado</string>
@@ -313,7 +318,7 @@
     <string name="addons_remove_error_dialog_title">Ocorreu un erro ao eliminar %1$s</string>
     <string name="addons_permissions_learn_more">Saber máis sobre permisos</string>
     <string name="addons_remove_error_dialog_ok">Ok</string>
-    <string name="fxa_signout_confirmation_title">Pechar a sesión de Firefox Accounts\?</string>
+    <string name="fxa_signout_confirmation_title">Pechar a sesión de Mozilla Accounts?</string>
     <string name="fxa_signout_confirmation_body">Cando peche a sesión, non vai poder enviar ou recibir pestanas doutros dispositivos. O seu historial e os marcadores tamén deixarán de sincronizarse.</string>
     <string name="fxa_signout_confirmation_checkbox_v1">Limpar historial, marcadores e inicios de sesión neste dispositivo</string>
     <string name="fxa_signout_confirmation_signout">Pechar sesión</string>
@@ -327,6 +332,11 @@
     <string name="history_context_add_bookmarks">Engadir aos marcadores</string>
     <string name="history_context_remove_bookmarks">Eliminar dos marcadores</string>
     <string name="download_context_delete">Borrar</string>
+    <string name="display_options_sound_effect">Usar efectos de son</string>
+    <string name="display_options_head_lock">Activar Head Lock</string>
+    <string name="display_options_windows_distance">Distancia das xanelas</string>
+    <string name="experimental_features">Funcionalidades experimentais</string>
+    <string name="controller_options_haptic_feedback">Feedback táctil</string>
     <string name="display_options_reset">Restablecer configuración de display</string>
     <string name="privacy_options_reset">Restablecer configuración de privacidade e seguridade</string>
     <string name="privacy_options_saved_logins_list_header">Inicios de sesión gardados:</string>
@@ -363,8 +373,7 @@
     <string name="resize_tooltip">Redimensionar</string>
     <string name="webxr_allowed_tooltip">WebXR permitido</string>
     <string name="webxr_blocked_tooltip">WebXR non permitido</string>
-    <string name="webxr_interstitial_exit_webxr">Saír
-\nWebXR</string>
+    <string name="webxr_interstitial_exit_webxr">Saír de \nWebXR</string>
     <string name="webxr_interstitial_how_to_continue_1">Premer calquera botón para continuar</string>
     <string name="private_browsing_enter_tooltip">Entrar en navegación privada</string>
     <string name="private_browsing_exit_tooltip">Saír da navegación privada</string>
@@ -389,8 +398,6 @@
     <string name="open_downloads_tooltip">Abrir descargas</string>
     <string name="close_history_tooltip">Pechar historial</string>
     <string name="close_downloads_tooltip">Pechar descargas</string>
-    <string name="open_library_tooltip">Abrir biblioteca</string>
-    <string name="close_library_tooltip">Pechar biblioteca</string>
     <string name="whats_new_tooltip">Novidades</string>
     <string name="remove_all">Borrar todo</string>
     <string name="homepage_hint">Páxina de inicio de %1$s (por defecto)</string>
@@ -407,6 +414,9 @@
     <string name="before_unload_prompt_message">Esta páxina está pedindo confirmación de que desexa abandonala. Os datos introducidos pódense perder.</string>
     <string name="before_unload_prompt_stay">Quedar na páxina</string>
     <string name="before_unload_prompt_leave">Abandonar a páxina</string>
+    <string name="repost_confirm_title">Confirmar reenvío do formulario</string>
+    <string name="repost_confirm_message">A páxina que estás buscando utilizou información que inseriches ti. Se volves a esa páxina é posible que se repita algunha das accións que levaches a cabo. Queres continuar?</string>
+    <string name="repost_confirm_continue">Continuar</string>
     <string name="performance_unblock_page">Desbloquear a páxina</string>
     <string name="performance_title">Rendemento baixo da páxina</string>
     <string name="performance_message">Probe a reducir o tamaño da xanela para mellorar o rendemento. Desbloquear esta páxina pode facer que a aplicación se peche por un erro.</string>
@@ -438,7 +448,7 @@
     <string name="send_tab_dialog_button">Enviar</string>
     <string name="whats_new_title_1">Iniciar sesión para enviar pestanas</string>
     <string name="whats_new_button_sign_in">Iniciar sesión</string>
-    <string name="whats_new_body_sub_1">Firefox Account tamén permite sincronizar os marcadores e o historial en todos os dispositivos.</string>
+    <string name="whats_new_body_sub_1">Mozilla Account tamén permite sincronizar os marcadores e o historial en todos os dispositivos.</string>
     <string name="slow_script_dialog_title">Script lento</string>
     <string name="slow_script_dialog_action_stop">Deter o script</string>
     <string name="slow_script_dialog_description">Unha páxina web está ralentizando o navegador (%1$s). Que desexa facer\?</string>
@@ -496,21 +506,21 @@
     <string name="privacy_policy_title">Política de privacidade xeral</string>
     <string name="terms_service_section_2">Wolvic usa servizos web (\"Servizos\") para proporcionar algunhas das funcionalidades incluídas para o seu uso nesta versión binaria de Wolvic, baixo os termos descritos a continuación.
 \n
-\n\t• Igalia e os seus colaboradores, licenciadores e socios traballan para proporcionar Servizos o máis precisos e actualizados posible. Porén, non podemos garantir que esta información sexa completa e libre de erros. Por exemplo, o Servizo de navegación segura pode non identificar algunha das páxinas webs perigosas, e pode identificar algunhas páxinas seguras como perigosas por erro, e no Servizo de localización todas as localizacións proporcionadas polos nosos proveedores son estimacións e nin nós nin os nosos proveedores do serrvizo garantimos a precisión das localizacións proporcionadas.
+\n\t• Igalia e os seus colaboradores, licenciadores e socios traballan para proporcionar Servizos o máis precisos e actualizados posible. Porén, non podemos garantir que esta información sexa completa e libre de erros. Por exemplo, o Servizo de navegación segura pode non identificar algunha das páxinas webs perigosas, e pode identificar algunhas páxinas seguras como perigosas por erro, e no Servizo de localización todas as localizacións proporcionadas polos nosos provedores son estimacións e nin nós nin os nosos provedores do serrvizo garantimos a precisión das localizacións proporcionadas.
 \n
 \n\t• Igalia resérvase o dereito a eliminar ou cambiar os Servizos á súa discreción.
 \n
-\n\t• Igalia pon a disposición estes Servizos coa versión adxunta de Wolvic, e garante dereitos de uso. Igalia e os seus licenciadores resérvanse todos os demais dereitos sobre os Servizos. Estes termos non pretenden limitar ningún dereito que proporcionen licencias open source que se podan aplicar a Wolvic e o seu código fonte.
+\n\t• Igalia pon a disposición estes Servizos coa versión adxunta de Wolvic, e garante dereitos de uso. Igalia e os seus licenciadores resérvanse todos os demais dereitos sobre os Servizos. Estes termos non pretenden limitar ningún dereito que proporcionen licencias open source que se poidan aplicar a Wolvic e o seu código fonte.
 \n
 \n\t• Os servizos proporciónanse \"tal e como están\". Igalia, os seus contribuidores, licenciadores e distribuidores, non proporcionan ningunha garantía, incluídas sen limitacións, garantías que os Servizos son axeitados para os propósitos particulares de cada usuario. O usuario asume todo o risco ao seleccionar os Servizos para os obxectivos concretos, en canto á calidade e rendemento dos mesmos.
 \n
-\n\t• Salvo se fose requerido por lei, Igalia, os contribuidores, licenciadores e distribuidores, non serán responsables de ningún dano indirecto, especial, incidental, consecuente, punitivo ou exemplar que xurda ou estea relacionado de algún xeito co uso de Wolvic e os Servizos. En calquera caso, a responsabilidade colectiva baixo estes termos non excederá os 500 USD (quinientos dólares). Algunhas xurisdiccións non permiten a exclusión ou limitación de certos danos, polo que é posible que esta exclusión e limitación non lle afecte.
+\n\t• Salvo se fose requirido por lei, Igalia, os contribuidores, licenciadores e distribuidores, non serán responsables de ningún dano indirecto, especial, incidental, consecuente, punitivo ou exemplar que xurda ou estea relacionado de algún xeito co uso de Wolvic e os Servizos. En calquera caso, a responsabilidade colectiva baixo estes termos non excederá os 500 USD (cincocentos dólares). Algunhas xurisdicións non permiten a exclusión ou limitación de certos danos, polo que é posible que esta exclusión e limitación non lle afecte.
 \n
-\n\t• Igalia poderá actualizar estos termos á súa discreción en calquera momento. En calquera caso, estes termos non poderán ser modificados ou cancelados sen o consentimento por escrito de Igalia.
+\n\t• Igalia poderá actualizar estes termos á súa discreción en calquera momento. En calquera caso, estes termos non poderán ser modificados ou cancelados sen o consentimento por escrito de Igalia.
 \n
-\n\t• Estes termos ríxense polas leis de España, excluíndo disposicións en materia de conflictos de leis. Se algunha parte destes termos é considerada inválida ou inaplicable por un xuíz, as partes restantes permanecerán en pleno vigor e efecto. En caso de conflicto entre unha versión traducida destes termos e a versión en español, prevalecerá a versión en español.
+\n\t• Estes termos réxense polas leis de España, excluíndo disposicións en materia de conflitos de leis. Se algunha parte destes termos é considerada inválida ou inaplicable por un xuíz, as partes restantes permanecerán en pleno vigor e efecto. En caso de conflito entre unha versión traducida destes termos e a versión en español, prevalecerá a versión en español.
 \n
-\n\t• No caso de que vostede non desexe utilizar un ou máis dos Servizos disponibles ou os termos anteriores sexan inaceptables para vostede, lembrámoslle que é posible desactivar certas funcións ou algúns dos Servizos. A continuación, explicamos como desactivar unha función ou servizo en concreto. É posible desactivar outras funcións ou servizos usando as preferencias da aplicación.
+\n\t• No caso de que vostede non desexe utilizar un ou máis dos Servizos dispoñibles ou os termos anteriores sexan inaceptables para vostede, lembrámoslle que é posible desactivar certas funcións ou algúns dos Servizos. A continuación, explicamos como desactivar unha función ou servizo en concreto. É posible desactivar outras funcións ou servizos usando as preferencias da aplicación.
 \n
 \n\t\t◦ A navegación segura está activada por defecto. Desactivala non é recomendado porque pode que se acceda a sitios non seguros. Se desexa desactivar esa función por completo, siga estes pasos:
 \n
@@ -532,7 +542,7 @@
 \n
 \n\t\t\t⁃ Escriba geo.enabled
 \n
-\n\t\t\t⁃ Faga doble click en geo.enabled
+\n\t\t\t⁃ Faga dobre click en geo.enabled
 \n
 \n\t\t\t⁃ A navegación con localización está agora desactivada
 \n
@@ -547,38 +557,40 @@
 \n\t\t\t⁃ Enhanced Tracking Protection is now disabled.</string>
     <string name="privacy_policy_subtitle_1">Información xeral</string>
     <string name="privacy_policy_subtitle_2">Protección de datos</string>
-    <string name="privacy_policy_section_2">IGALIA is committed to complying with the legal provisions regarding the protection of personal data: Regulation (EU) 2016/679 of the European Parliament and of the Council of 27th April 2016 on the protection of natural persons with regard to the processing of personal data and on the free movement of such data and repealing Directive 95/46/EC (General Data Protection Regulation) and in the Organic Law 3/2018, of December 5, on Data Protection and Guarantee of Digital Rights (LOPDGDD).
-\nIGALIA does not collect personal data in such a way that the user can be identified. Therefore, you can use the application, consult and browse the virtual reality environment without revealing your identity or providing personal data to IGALIA, either directly or indirectly; therefore, IGALIA will not be liable for any the data that is entered in WOLVIC.
-\nThe only data and information that IGALIA will obtain for the use of this application, which at no time will be individually linked to the user, are the following:
+    <string name="privacy_policy_section_2">IGALIA está comprometida co cumprimento das provisións legais en relación coa protección de datos persoais: Regulación (EU) 2016/679 do Parlamento Europeo e do Consello do 27th April 2016 da protección das persoas físicas con respecto ao procesamento de datos persoais e á libre circulación dos mesmos (RGPD) e na Lei Orgánica 3/2018, de 5 de decembro, de protección de datos e garantía dos dereitos dixitais (LOPDGDD).
 \n
-\n\t• Analytical, purely statistical, and non-identifying data.
-\n\t• In order to capture and translate the voice into text, the user’s sound data is sent to the servers owned by the third party company responsible for each platform, through an API for this purpose: for example, in Oculus, from Facebook, a service that sends it to Oculus Voice SDK. At no time is the aforementioned data processed, accessed, or incorporated into the servers owned by IGALIA. The data transmitted will be the exclusive responsibility of the third party companies that own each platform (hereinafter, the Third Parties), which may be located outside the European Union and subject to a legal regime that is less protective of user privacy. We recommend that you carefully read the privacy policy and terms of use of each of these external platforms before accepting and using their services. IGALIA will not be directly or indirectly responsible for the processing of personal data by said Third Parties.
-\n\t• Geographic location information maybe be obtained from the browser, instead of the one used by the system. However, in order to do so, you must set the location permissions of your device through a specific notice in this regard and IGALIA will in no way link the aforementioned information to you as an identified or identifiable person, although the Third Parties mentioned in the previous point could do so, if applicable. We recommend you to pay attention to their legal terms.
-\n\t• IGALIA will not access or store, in any way, the addresses or URLs visited by you.
-\n\t• Integration with Cloud services (such as Firefox Accounts or Google Accounts) to synchronize data such as your browsing history or your user bookmarks may be possible. In this case, IGALIA will not access or process any information in any way, nor will it pass through IGALIA’s servers.
+\nIGALIA non recolle datos persoais de maneira que o usuario poida ser identificado. Polo tanto, vostede pode usar a aplicación, consultar e navegar o entorno de realidade virtual sen revelar a súa identidade ou proporcionar datos persoais a IGALIA, nin directa nin indirectamente; polo tanto IGALIA non será responsable de ningún dos datos introducidos en WOLVIC.
 \n
-\nWe remind you again that the Third Party platforms that you access or use with this application could collect this or other identifying data about you, either filling them in voluntarily or involuntarily and/or consciously or unconsciously, possibly outside the scope of European data protection legislation. Therefore, we recommend that you inform yourself and pay special attention to the legal terms of said Third Parties, such as, for example, the following:
+\nOs únicos datos e información que IGALIA obterá do uso da aplicación, os cales non poderán ser utilizados en ningún momento para identificar ao usuario, son os seguintes:
+\n
+\n\t• Datos analíticos, puramente estatísticos e non identificativos.
+\n\t• Para capturar e traducir a voz en texto, os datos de son do usuario son transferidos a servidores propiedade da compañía responsable de cada plataforma, a través da API para este propósito: por exemplo, en Oculus, de Facebook, un servizo que o envía ao SDK de voz de Oculus. En ningún momento, os datos mencionados son procesados, accedidos ou incorporados a servidores propiedade de IGALIA. Os datos transmitidos serán responsabilidade exclusiva das compañías que posúen cada plataforma (de aquí en diante, Terceiras Partes), que poden estar localizadas fora da Unión Europea e suxeitas a un réxime legar menos protector da privacidade do usuario. Recomendámoslle que lea con coidade a política de privacidade e os termos de uso de cada unha destas plataformas externas antes de aceptar e usar os seus servizos. IGALIA non será directa nin indirectamente responsable do procesamento dos datos persoais por estas Terceiras Partes.
+\n\t• A información de localización xeográfica podería obterse dende o navegador, en lugar da usada polo sistema. No entanto, para facer isto, debe configurar os permisos de localización do seu dispositivo cun aviso específico neste sentido e IGALIA non enlazará en ningún momento esta información a vostede como persoa identificada ou identificable, aínda que as Terceiras Partes mencionadas no punto anterior poderían facelo, se é aplicable. Recomendámoslle que preste atención aos seus termos legais.
+\n\t• IGALIA non accederá nin almacenará, de ningún modo, os enderezos ou URLs que visite.
+\n\t• A integración con servizos cloud (como Mozilla Accounts ou Google Accounts) para sincronizar datos como o historial de busca ou os seus marcadores podería ser posible. Neste caso, IGALIA non accederá ou procesará ningunha información de ningún modo, e tampouco a transmitirá a través dos servidores de IGALIA.
+\n
+\nRecordámoslle de novo que as plataformas de Terceiras Partes ás que vostede acceda ou use con esta aplicación poderían recoller estes ou outros datos identificativos de seu, ben proporcionándoos de maneira voluntaria ou involuntaria, consciente ou inconscientemente, posiblemente fora do alcance da lexislación de protección de datos Europea. Polo tanto, recomendámoslle que se informe e preste especial atención aos termos legais de ditas Terceiras Partes, como por exemplo, as seguintes:
 \n
 \n\t• Google: https://policies.google.com/privacy
 \n\t• Facebook: https://www.facebook.com/about/privacy/update
 \n\t• MeetKai: https://meetkai.com/privacy
 \n
-\nLikewise, IGALIA informs you that while using the voice recognition option of the browser, Meetkai will keep totally anonymized voice transcriptions of your voice with the purposes of improving the service provided by them. Your voice will not be kept or will be any way to connect the transcriptions with your identity. More information about MeetKai privacy policy in the following link: https://meetkai.com/es/privacy. Igalia neither has any interest in linking transcriptions with any user nor in affecting their privacy; consequently, Igalia requests that no personal or confidential information of any kind is included in their sound voice addresses.
-\nIn any case, IGALIA guarantees to the interested parties the exercise of the rights of access, rectification, deletion, opposition, limitation of treatment, and portability, regarding their personal data.
-\nFor such purposes, IGALIA has established an internal protocol/procedure to carry them out.
-\nInterested parties can exercise their rights are as follows: by sending a request to IGALIA’s physical address: Calle Bugallal Marchesi, 22, 1o, 15008, A Coruña, Reference: “Data Protection”; or, to the following email address: info@igalia.com.
-\nIn both cases, the interested party must attach a copy of their national ID, passport, or identification document to prove their identity.
-\nThe Data Protection Officer or the department entrusted with the management of the rights will record the exercises of rights in the form, available for this purpose, in which the following data will be recorded:
+\nAsí mesmo, IGALIA infórmalle de que mentres utilice a opción de recoñecemento de voz do navegador, Meetkai manterá transcricións de voz totalmente anónimas da súa voz coa finalidade de mellorar o servizo que prestan. A súa voz non se conservará nin haberá ningún xeito de conectar as transcricións coa súa identidade. Máis información sobre a política de privacidade de MeetKai na seguinte ligazón: https://meetkai.com/es/privacy. Igalia nin ten interese en vincular transcricións con ningún usuario nin en afectar á súa privacidade; en consecuencia, Igalia solicita que non se inclúa información persoal ou confidencial de ningún tipo nos seus enderezos de voz sonora.
+\nEn todo caso, IGALIA garante aos interesados o exercicio dos dereitos de acceso, rectificación, supresión, oposición, limitación do tratamento e portabilidade, respecto dos seus datos persoais.
+\nPara tales efectos, IGALIA estableceu un protocolo/procedemento interno para levalos a cabo.
+\nAs partes interesadas poden exercer os seus dereitos como segue: mediante o envío dunha solicitude ao enderezo físico de IGALIA: rúa Bugallal Marchesi, 22, 1o, 15008, A Coruña, Referencia: “Protección de datos”; ou ben, ao seguinte enderezo de correo electrónico: info@igalia.com.
+\nEn ambos os casos, o interesado deberá achegar copia do seu DNI, pasaporte ou documento identificativo que acredite a súa identidade.
+\nO Delegado de Protección de Datos ou o departamento encargado da xestión dos dereitos rexistrarán os exercicios dos dereitos no formulario, dispoñible para o efecto, no que se recollerán os seguintes datos:
 \n
-\n\t• Application number: a number will be assigned to each of the received applications.
-\n\t• Headquarters: if the person in charge has several headquarters, the headquarters where the request was received will be stated.
-\n\t• Channel to file claims: the channel through which the request was received will be indicated: physical mail address, mail, etc.
-\n\t• Filing date: the date when the request has been filed will be indicated.
-\n\t• Exercised rights: the type of right the person exercised.
-\n\t• Response day: the day on which the response was sent to the interested party.
+\n\t• Número de solicitude: asignarase un número a cada unha das solicitudes recibidas.
+\n\t• Sede: se o responsable ten varias sedes, farase constar a sede onde se recibiu a solicitude.
+\n\t• Canle para presentar reclamacións: indicarase a canle pola que se recibiu a solicitude: enderezo físico, correo, etc.
+\n\t• Data de presentación: indicarase a data na que se presentou a solicitude.
+\n\t• Dereitos exercidos: o tipo de dereito que exerceu a persoa.
+\n\t• Día da resposta: o día no que se enviou a resposta á parte interesada.
 \n
-\nThe supporting documentation (receipt of request/response, communications, etc.) will be archived for the purpose of proving its correct management.
-\nLikewise, you are reminded that you have the right to file a claim with the Spanish Data Protection Agency.</string>
+\nArquivarase a documentación xustificativa (recibo de solicitude/resposta, comunicacións, etc.) co fin de acreditar a súa correcta xestión.
+\nAsí mesmo, lémbraselle que ten dereito a presentar unha reclamación ante a Axencia Española de Protección de Datos.</string>
     <string name="settings_language_choose_language_voice_search_service_description">Escolla o seu servizo online preferido para busca por voz.</string>
     <string name="settings_language_choose_language_voice_search_description">Escolla o seu idioma preferido para busca por voz.</string>
     <string name="settings_language_choose_language_content_title">Idiomas preferidos para amosar páxinas web</string>
@@ -610,9 +622,9 @@
     <string name="developer_options_environments">Contorna</string>
     <string name="developer_options_env_void">Void</string>
     <string name="developer_options_env_offworld">Offworld</string>
-    <string name="developer_options_env_underwater">Underwater</string>
-    <string name="developer_options_env_winter">Winter</string>
-    <string name="developer_options_env_cave">Cave</string>
+    <string name="developer_options_env_underwater">Submarino</string>
+    <string name="developer_options_env_winter">Inverno</string>
+    <string name="developer_options_env_cave">Caverna</string>
     <string name="developer_options_pointer_color">Cor do punteiro</string>
     <string name="fxa_account_options_sync_description">Escolla que sincronizar nos seus dispositivos usando Firefox</string>
     <string name="fxa_account_options_reset">Restablecer</string>
@@ -628,8 +640,8 @@
     <string name="crash_dialog_heading">Tivemos un problema e pechouse a aplicación</string>
     <string name="brightness_mode_tooltip">Brillo</string>
     <string name="brightness_mode_void">Void</string>
-    <string name="video_mode_180_left_right">Stereo 180 Left to Right</string>
-    <string name="video_mode_180_top_bottom">Stereo 180 Top to Bottom</string>
+    <string name="video_mode_180_left_right">Estéreo 180 de Esquerda a Dereita</string>
+    <string name="video_mode_180_top_bottom">Estéreo 180 de Arriba a Abaixo</string>
     <string name="video_controls_unmute">Deixar de silenciar</string>
     <string name="video_controls_seek_forward">Avanzar +%1$s segundos</string>
     <string name="video_controls_seek_backward">Retroceder -%1$s segundos</string>
@@ -675,8 +687,17 @@
     <string name="tabs_selected_counter_none">0 pestanas seleccionadas</string>
     <string name="hamburger_menu_send_tab">Enviar pestana a dispositivo</string>
     <string name="hamburger_menu_resize">Redimensionar xanela</string>
+    <string name="hamburger_menu_find_in_page">Buscar na páxina</string>
     <string name="hamburger_menu_addons">Complementos</string>
     <string name="whats_new_button_start_browsing">Comezar a navegar</string>
+    <string name="deprecated_version_dialog_title">Actualización necesaria</string>
+    <string name="deprecated_version_dialog_body">Esta versión de desenvolvemento de Wolvic deixará de estar dispoñible a finais de outubre de 2023.
+\n
+\nPor favor, instala a versión máis recente de Wolvic dende la tenda de Meta.
+\n
+\nIMPORTANTE: a menos que uses Firefox Sync, a nova app de Wolvic non terá os teus marcadores nin as tuas páxinas abertas.</string>
+    <string name="deprecated_version_dialog_info_button">Aprender máis…</string>
+    <string name="deprecated_version_dialog_store_button">Instalar…</string>
     <string name="webxr_dialog_button_on">Activado</string>
     <string name="exit_confirm_dialog_button_cancel">Cancelar</string>
     <string name="download_open_file_unsupported_open">Abrir</string>
@@ -697,5 +718,101 @@
     <string name="privacy_policy_section_3">Esta política de privacidade está suxeita á lei española. O idioma de aplicación desta política de privacidade é o español. Por esta razón, ante calquera posible diferencia entre o orixinal en Español e as traduccións a outros idiomas será considerada prevalente a versión en español que pode atoparse aquí:
 \nhttps://wolvic.com/es/legal/privacy/ .</string>
     <string name="voice_service_metkai">MeetKai</string>
-    <string name="voice_service_huawei_asr">Huawei Automatic Speech Recognition</string>
+    <string name="voice_service_huawei_asr">Recoñecemento de voz automático de Huawei</string>
+    <string name="permissions_dialog_remember_choice">Lembrar esta decisión</string>
+    <string name="settings_language_galician">Galego</string>
+    <string name="settings_language_portuguese_br">Portugués (Brasil)</string>
+    <string name="notifications_title">Notificacións</string>
+    <string name="notifications_empty">A túa lista de notificacións está baleira</string>
+    <string name="notifications_loading">Cargando notificacións</string>
+    <string name="web_apps_empty">A túa lista de aplicacións web está baleira</string>
+    <string name="web_apps_loading">Cargando aplicacións web</string>
+    <string name="web_apps_dialog_title">Instalar aplicación web</string>
+    <string name="web_apps_dialog_title_parameter">Instalar %1$s</string>
+    <string name="web_apps_dialog_body">Queres instalar a seguinte aplicación Web\? Estará dispoñible na túa biblioteca.</string>
+    <string name="web_apps_dialog_install">Instalar</string>
+    <string name="web_apps_saved_notification">Aplicación web engadida!</string>
+    <string name="hamburger_menu_save_web_app">Gardar aplicación web…</string>
+    <string name="download_addon_install_confirm_install">Instalar</string>
+    <string name="download_addon_install_blocked_body">Permitir a instalación de engadidos locais nas Opcións de Desenvolvedor para proceder.</string>
+    <string name="web_apps_dialog_cancel">Cancelar</string>
+    <string name="addons_experimental_section_title">Experimental</string>
+    <string name="web_apps_title">Aplicacións Web</string>
+    <string name="download_addon_install_cancel">Cancelar</string>
+    <string name="web_apps_description">Preme o botón Gardar aplicación Web... cando esteas nunha páxina para engadila ás túas aplicacións web.</string>
+    <string name="download_addon_install">Instalar engadido</string>
+    <string name="download_addon_install_blocked">A instalación do engadido local foi bloqueada</string>
+    <string name="upload_button">Enviar</string>
+    <string name="upload_list_empty">Non hai arquivos dispoñibles para enviar</string>
+    <string name="settings_language_portuguese">Portugués</string>
+    <string name="user_feedback_tooltip">Comparte ideas e comentarios</string>
+    <string name="clear_user_data_dialog_title">Borrar os datos do usuario %1$s</string>
+    <string name="keyboardview_keycode_mode_change">Cambio de modo</string>
+    <string name="display_options_start_with_passthrough">Iniciar no modo Passthrough</string>
+    <string name="security_options_use_system_root_ca">Usar System Trusted root Certificates</string>
+    <string name="voice_input_start">Que queres introducir?</string>
+    <string name="video_mode_3d_top_bottom">3D Top Bottom</string>
+    <string name="hamburger_menu_toggle_passthrough">Passthrough</string>
+    <string name="keyboardview_keycode_alt">Alt</string>
+    <string name="keyboardview_keycode_cancel">Cancelar</string>
+    <string name="keyboardview_keycode_delete">Borrar</string>
+    <string name="keyboardview_keycode_done">Listo</string>
+    <string name="keyboardview_keycode_shift">Shift</string>
+    <string name="rCN_first_launch_clickable_terms_text">Acordo de usuario</string>
+    <string name="rCN_first_launch_confirmation_body">Se escolles \"Non aceptar\", non poderemos proporcionar servizos.
+\n
+\nPodes ler o Acordo de Usuario e a Política de Privacidade completos.</string>
+    <string name="rCN_first_launch_confirmation_agree">Aceptar e continuar</string>
+    <string name="rCN_first_launch_agree">Aceptar</string>
+    <string name="rCN_first_launch_confirmation_disagree">Non aceptar e saír</string>
+    <string name="clear_user_data_dialog_text">%1$s será reiniciado. Todos os datos, incluídos os logins gardados, a historia e os marcadores, serán borrados permanentemente se non foron sincronizados. %1$s pecharase automáticamente cando o borrado finalice. Desexas continuar?</string>
+    <string name="developer_options_clear_user_data_description">Todos os datos de usuario</string>
+    <string name="rCN_first_launch_title">Notificación do acordo co usuario e a política de privacidade</string>
+    <string name="rCN_first_launch_body">Benvido a \"Wolvic\"!
+\n
+\nPara rexistrarse e usar \"Wolvic\" é necesario aceptar o Acordo de Usuario e a Política de Privacidade, ou non poderemos proporcionar servizos. Por favor lea coidadosamente os documentos e prema en \"Aceptar\" para continuar. Se premes en \"Non aceptar\", non poderás continuar usando \"Wolvic\".
+\n
+\nPodes ler o Acordo de Usuario e a Política de Privacidade completos.</string>
+    <string name="rCN_first_launch_clickable_privacy_text">Política de Privacidade</string>
+    <string name="rCN_first_launch_disagree">Non aceptar</string>
+    <string name="keyboardview_keycode_enter">Enter</string>
+    <string name="tray_wifi_unavailable_ssid">SSID non dispoñible</string>
+    <string name="display_options_latin_auto_complete">Autocompletado co teclado latino</string>
+    <string name="tray_status_phone">Teléfono: %1$s</string>
+    <string name="hamburger_menu_zoom">Zoom</string>
+    <string name="permission_camera_rationale">Obter imaxes do teu entorno require permiso para usar a túa cámara.</string>
+    <string name="permission_notification_rationale">Notificar de novas e actualizacións require permiso para enviar notificacións.</string>
+    <string name="phone_ui_alert_dialog_title">Erro</string>
+    <string name="phone_ui_usb_alert_dialog_description">Erro obtendo permisos USB. Tente desconectar as gafas, conectalas de novo e reiniciar Wolvic.</string>
+    <string name="permission_rationale_title">Permisos adicionais</string>
+    <string name="permission_microphone_rationale">Facer pesquisas por voz e escritura por voz require permisos para usar o teu micrófono.</string>
+    <string name="permission_camera_and_microphone_rationale">Proporcionar servizos como a videoconferencia require permiso para usar a cámara e o micrófono.</string>
+    <string name="permission_location_rationale">Ofrecer novas e contido local require permiso para acceder á túa localización.</string>
+    <string name="permission_read_external_storage_rationale">Abrir arquivos no teu dispositivo require permiso para ler o almacenamento externo.</string>
+    <string name="phone_ui_set3dmode_alert_dialog_description">Erro ao cambiar a modo 3D. Tente desconectar as gafas, conectalas de novo e reiniciar Wolvic.</string>
+    <string name="permission_persistent_storage_rationale">Gardar e abrir arquivos no teu dispositivo require permisos para almacenar datos no almacenamento persistente.</string>
+    <string name="vision_glass_disconnected_message">Por favor conecte Vision Glass</string>
+    <string name="vision_glass_touchpad_instructions">Pulsa para facer click. Desliza para facer scroll</string>
+    <string name="vision_glass_error_message">Houbo un erro.
+\nTente de novo.</string>
+    <string name="tabs_bookmark_selected">Gardar nos marcadores</string>
+    <string name="incompatible_os_version_title">Versión non soportada</string>
+    <string name="incompatible_os_version_message">A versión actual do sistema non está soportada. Wolvic require polo menos a versión %1$s</string>
+    <string name="controller_options_handtracking">Seguimento de mans</string>
+    <string name="vision_glass_realign_dialog_explanation">Para configurar o controlador, apunte o seu teléfono cara adiante e toque o botón.</string>
+    <string name="controller_options_pointer_mode">Modo de control do punteiro</string>
+    <string name="display_options_tabs_location_tray">Panel</string>
+    <string name="display_options_tabs_location_horizontal">Horizontal</string>
+    <string name="display_options_tabs_location_vertical">Vertical</string>
+    <string name="settings_window_size">Tamaño predeterminado da xanela</string>
+    <string name="window_size_preset">%1$d×%2$d</string>
+    <string name="download_addon_install_blocked_permissions_body">Permita os permisos de almacenamento en Opcións de privacidade para continuar.</string>
+    <string name="display_options_tabs_location">Localización das pestanas</string>
+    <string name="developer_options_pointer_mode_tracked_pointer">Co controlador ou a man</string>
+    <string name="developer_options_pointer_mode_tracked_eye">Coa mirada</string>
+    <string name="eye_tracking_permission_title">Permisos de seguimiento ocular</string>
+    <string name="eye_tracking_permission_message">Habilitar o seguimento ocular para navegar pola web supón riscos significativos para a privacidade. Esta tecnoloxía captura onde e canto tempo un usuario mira partes específicas dunha páxina web, revelando detalles íntimos sobre os seus intereses e reaccións emocionais. Os anunciantes e terceiros poden explotar estes datos para o márketing intrusivo e a creación de perfís. Ademais, os patróns de movemento dos ollos poderían deducir información sensible, como condicións médicas, estados cognitivos ou hábitos persoais. Por iso, é crucial considerar as implicacións para a privacidade antes de conceder acceso á información de seguimento ocular a páxinas web.</string>
+    <string name="new_tab">Nova pestana</string>
+    <string name="new_private_tab">Nova pestana privada</string>
+    <string name="close_tab">Pechar pestana</string>
 </resources>

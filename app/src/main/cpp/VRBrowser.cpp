@@ -28,6 +28,8 @@ const char* const kHandleMoveEndName = "handleMoveEnd";
 const char* const kHandleMoveEndSignature = "(IFFFF)V";
 const char* const kHandleBackEventName = "handleBack";
 const char* const kHandleBackEventSignature = "()V";
+const char* const kHandleAppExitEventName = "handleAppExit";
+const char* const kHandleAppExitEventSignature = "()V";
 const char* const kRegisterExternalContextName = "registerExternalContext";
 const char* const kRegisterExternalContextSignature = "(J)V";
 const char* const kOnEnterWebXRName = "onEnterWebXR";
@@ -39,11 +41,15 @@ const char* const kOnDismissWebXRInterstitialSignature = "()V";
 const char* const kOnWebXRRenderStateChangeName = "onWebXRRenderStateChange";
 const char* const kOnWebXRRenderStateChangeSignature = "(Z)V";
 const char* const kRenderPointerLayerName = "renderPointerLayer";
-const char* const kRenderPointerLayerSignature = "(Landroid/view/Surface;J)V";
+const char* const kRenderPointerLayerSignature = "(Landroid/view/Surface;IJ)V";
 const char* const kGetStorageAbsolutePathName = "getStorageAbsolutePath";
 const char* const kGetStorageAbsolutePathSignature = "()Ljava/lang/String;";
 const char* const kIsOverrideEnvPathEnabledName = "isOverrideEnvPathEnabled";
 const char* const kIsOverrideEnvPathEnabledSignature = "()Z";
+const char* const kCheckTogglePassthrough = "checkTogglePassthrough";
+const char* const kCheckTogglePassthroughSignature = "()V";
+const char* const kResetWindowsPosition = "resetWindowsPosition";
+const char* const kResetWindowsPositionSignature = "()V";
 const char* const kGetActiveEnvironment = "getActiveEnvironment";
 const char* const kGetActiveEnvironmentSignature = "()Ljava/lang/String;";
 const char* const kGetPointerColor = "getPointerColor";
@@ -64,6 +70,16 @@ const char* const kAppendAppNotesToCrashReport = "appendAppNotesToCrashReport";
 const char* const kAppendAppNotesToCrashReportSignature = "(Ljava/lang/String;)V";
 const char* const kUpdateControllerBatteryLevelsName = "updateControllerBatteryLevels";
 const char* const kUpdateControllerBatteryLevelsSignature = "(II)V";
+const char* const kOnAppFocusChangedName = "onAppFocusChanged";
+const char* const kOnAppFocusChangedSignature = "(Z)V";
+const char* const kSetEyeTrackingSupported = "setEyeTrackingSupported";
+const char* const kSetEyeTrackingSupportedSignature = "(Z)V";
+const char* const kSetHandTrackingSupported = "setHandTrackingSupported";
+const char* const kSetHandTrackingSupportedSignature = "(Z)V";
+const char* const kOnControllersAvailable = "onControllersAvailable";
+const char* const kOnControllersAvailableSignature = "()V";
+const char* const kChangeWindowDistance = "changeWindowDistance";
+const char* const kChangeWindowDistanceSignature = "(F)V";
 
 JNIEnv* sEnv = nullptr;
 jclass sBrowserClass = nullptr;
@@ -77,6 +93,7 @@ jmethodID sHandleGesture = nullptr;
 jmethodID sHandleResize = nullptr;
 jmethodID sHandleMoveEnd = nullptr;
 jmethodID sHandleBack = nullptr;
+jmethodID sHandleAppExit = nullptr;
 jmethodID sRegisterExternalContext = nullptr;
 jmethodID sOnEnterWebXR = nullptr;
 jmethodID sOnExitWebXR = nullptr;
@@ -85,6 +102,8 @@ jmethodID sOnWebXRRenderStateChange = nullptr;
 jmethodID sRenderPointerLayer = nullptr;
 jmethodID sGetStorageAbsolutePath = nullptr;
 jmethodID sIsOverrideEnvPathEnabled = nullptr;
+jmethodID sCheckTogglePassthrough = nullptr;
+jmethodID sResetWindowsPosition = nullptr;
 jmethodID sGetActiveEnvironment = nullptr;
 jmethodID sGetPointerColor = nullptr;
 jmethodID sAreLayersEnabled = nullptr;
@@ -95,7 +114,13 @@ jmethodID sOnAppLink = nullptr;
 jmethodID sDisableLayers = nullptr;
 jmethodID sAppendAppNotesToCrashReport = nullptr;
 jmethodID sUpdateControllerBatteryLevels = nullptr;
-}
+jmethodID sOnAppFocusChanged = nullptr;
+jmethodID sSetEyeTrackingSupported = nullptr;
+jmethodID sSetHandTrackingSupported = nullptr;
+jmethodID sOnControllersAvailable = nullptr;
+jmethodID sChangeWindowDistance = nullptr;
+
+} // namespace
 
 namespace crow {
 
@@ -123,6 +148,7 @@ VRBrowser::InitializeJava(JNIEnv* aEnv, jobject aActivity) {
   sHandleResize = FindJNIMethodID(sEnv, sBrowserClass, kHandleResizeName, kHandleResizeSignature);
   sHandleMoveEnd = FindJNIMethodID(sEnv, sBrowserClass, kHandleMoveEndName, kHandleMoveEndSignature);
   sHandleBack = FindJNIMethodID(sEnv, sBrowserClass, kHandleBackEventName, kHandleBackEventSignature);
+  sHandleAppExit = FindJNIMethodID(sEnv, sBrowserClass, kHandleAppExitEventName, kHandleAppExitEventSignature);
   sRegisterExternalContext = FindJNIMethodID(sEnv, sBrowserClass, kRegisterExternalContextName, kRegisterExternalContextSignature);
   sOnEnterWebXR = FindJNIMethodID(sEnv, sBrowserClass, kOnEnterWebXRName, kOnEnterWebXRSignature);
   sOnExitWebXR = FindJNIMethodID(sEnv, sBrowserClass, kOnExitWebXRName, kOnExitWebXRSignature);
@@ -131,6 +157,8 @@ VRBrowser::InitializeJava(JNIEnv* aEnv, jobject aActivity) {
   sRenderPointerLayer = FindJNIMethodID(sEnv, sBrowserClass, kRenderPointerLayerName, kRenderPointerLayerSignature);
   sGetStorageAbsolutePath = FindJNIMethodID(sEnv, sBrowserClass, kGetStorageAbsolutePathName, kGetStorageAbsolutePathSignature);
   sIsOverrideEnvPathEnabled = FindJNIMethodID(sEnv, sBrowserClass, kIsOverrideEnvPathEnabledName, kIsOverrideEnvPathEnabledSignature);
+  sCheckTogglePassthrough = FindJNIMethodID(sEnv, sBrowserClass, kCheckTogglePassthrough, kCheckTogglePassthroughSignature);
+  sResetWindowsPosition = FindJNIMethodID(sEnv, sBrowserClass, kResetWindowsPosition, kResetWindowsPositionSignature);
   sGetActiveEnvironment = FindJNIMethodID(sEnv, sBrowserClass, kGetActiveEnvironment, kGetActiveEnvironmentSignature);
   sGetPointerColor = FindJNIMethodID(sEnv, sBrowserClass, kGetPointerColor, kGetPointerColorSignature);
   sAreLayersEnabled = FindJNIMethodID(sEnv, sBrowserClass, kAreLayersEnabled, kAreLayersEnabledSignature);
@@ -141,6 +169,11 @@ VRBrowser::InitializeJava(JNIEnv* aEnv, jobject aActivity) {
   sDisableLayers = FindJNIMethodID(sEnv, sBrowserClass, kDisableLayers, kDisableLayersSignature);
   sAppendAppNotesToCrashReport = FindJNIMethodID(sEnv, sBrowserClass, kAppendAppNotesToCrashReport, kAppendAppNotesToCrashReportSignature);
   sUpdateControllerBatteryLevels = FindJNIMethodID(sEnv, sBrowserClass, kUpdateControllerBatteryLevelsName, kUpdateControllerBatteryLevelsSignature);
+  sOnAppFocusChanged = FindJNIMethodID(sEnv, sBrowserClass, kOnAppFocusChangedName, kOnAppFocusChangedSignature);
+  sSetEyeTrackingSupported = FindJNIMethodID(sEnv, sBrowserClass, kSetEyeTrackingSupported, kSetEyeTrackingSupportedSignature);
+  sSetHandTrackingSupported = FindJNIMethodID(sEnv, sBrowserClass, kSetHandTrackingSupported, kSetHandTrackingSupportedSignature);
+  sOnControllersAvailable = FindJNIMethodID(sEnv, sBrowserClass, kOnControllersAvailable, kOnControllersAvailableSignature);
+  sChangeWindowDistance = FindJNIMethodID(sEnv, sBrowserClass, kChangeWindowDistance, kChangeWindowDistanceSignature);
 }
 
 JNIEnv * VRBrowser::Env()
@@ -169,7 +202,9 @@ VRBrowser::ShutdownJava() {
   sHandleResize = nullptr;
   sHandleMoveEnd = nullptr;
   sHandleBack = nullptr;
+  sHandleAppExit = nullptr;
   sRegisterExternalContext = nullptr;
+  sOnAppFocusChanged = nullptr;
   sOnEnterWebXR = nullptr;
   sOnExitWebXR = nullptr;
   sOnDismissWebXRInterstitial = nullptr;
@@ -177,6 +212,8 @@ VRBrowser::ShutdownJava() {
   sRenderPointerLayer = nullptr;
   sGetStorageAbsolutePath = nullptr;
   sIsOverrideEnvPathEnabled = nullptr;
+  sCheckTogglePassthrough = nullptr;
+  sResetWindowsPosition = nullptr;
   sGetActiveEnvironment = nullptr;
   sGetPointerColor = nullptr;
   sAreLayersEnabled = nullptr;
@@ -186,6 +223,7 @@ VRBrowser::ShutdownJava() {
   sDisableLayers = nullptr;
   sEnv = nullptr;
   sAppendAppNotesToCrashReport = nullptr;
+  sChangeWindowDistance = nullptr;
 }
 
 void
@@ -258,6 +296,13 @@ VRBrowser::HandleBack() {
 }
 
 void
+VRBrowser::HandleAppExit() {
+  if (!ValidateMethodID(sEnv, sActivity, sHandleAppExit, __FUNCTION__)) { return; }
+  sEnv->CallVoidMethod(sActivity, sHandleAppExit);
+  CheckJNIException(sEnv, __FUNCTION__);
+}
+
+void
 VRBrowser::RegisterExternalContext(jlong aContext) {
   if (!ValidateMethodID(sEnv, sActivity, sRegisterExternalContext, __FUNCTION__)) { return; }
   sEnv->CallVoidMethod(sActivity, sRegisterExternalContext, aContext);
@@ -295,13 +340,13 @@ void VRBrowser::OnWebXRRenderStateChange(const bool aRendering) {
 }
 
 void
-VRBrowser::RenderPointerLayer(jobject aSurface, const std::function<void()>& aFirstCompositeCallback) {
+VRBrowser::RenderPointerLayer(jobject aSurface, const int32_t color, const std::function<void()>& aFirstCompositeCallback) {
   if (!ValidateMethodID(sEnv, sActivity, sRenderPointerLayer, __FUNCTION__)) { return; }
   jlong callback = 0;
   if (aFirstCompositeCallback) {
     callback = reinterpret_cast<jlong>(new std::function<void()>(aFirstCompositeCallback));
   }
-  sEnv->CallVoidMethod(sActivity, sRenderPointerLayer, aSurface, callback);
+  sEnv->CallVoidMethod(sActivity, sRenderPointerLayer, aSurface, color, callback);
   CheckJNIException(sEnv, __FUNCTION__);
 }
 
@@ -332,6 +377,20 @@ VRBrowser::isOverrideEnvPathEnabled() {
   CheckJNIException(sEnv, __FUNCTION__);
 
   return jBool;
+}
+
+void
+VRBrowser::CheckTogglePassthrough() {
+  if (!ValidateMethodID(sEnv, sActivity, sCheckTogglePassthrough, __FUNCTION__)) { return; }
+  sEnv->CallVoidMethod(sActivity, sCheckTogglePassthrough);
+  CheckJNIException(sEnv, __FUNCTION__);
+}
+
+void
+VRBrowser::ResetWindowsPosition() {
+  if (!ValidateMethodID(sEnv, sActivity, sResetWindowsPosition, __FUNCTION__)) { return; }
+  sEnv->CallVoidMethod(sActivity, sResetWindowsPosition);
+  CheckJNIException(sEnv, __FUNCTION__);
 }
 
 std::string
@@ -421,5 +480,41 @@ VRBrowser::UpdateControllerBatteryLevels(const jint aLeftBatteryLevel, const jin
   CheckJNIException(sEnv, __FUNCTION__);
 }
 
+void
+VRBrowser::OnAppFocusChanged(const bool aIsFocused) {
+  if (!ValidateMethodID(sEnv, sActivity, sOnAppFocusChanged, __FUNCTION__)) { return; }
+  sEnv->CallVoidMethod(sActivity, sOnAppFocusChanged, (jboolean) aIsFocused);
+  CheckJNIException(sEnv, __FUNCTION__);
+}
+
+// implement the SetEyeTrackingSupported method
+void
+VRBrowser::SetEyeTrackingSupported(bool aIsSupported) {
+    if (!ValidateMethodID(sEnv, sActivity, sSetEyeTrackingSupported, __FUNCTION__)) { return; }
+    sEnv->CallVoidMethod(sActivity, sSetEyeTrackingSupported, (jboolean) aIsSupported);
+    CheckJNIException(sEnv, __FUNCTION__);
+}
+
+void
+VRBrowser::SetHandTrackingSupported(bool aIsSupported) {
+    if (!ValidateMethodID(sEnv, sActivity, sSetHandTrackingSupported, __FUNCTION__)) { return; }
+    sEnv->CallVoidMethod(sActivity, sSetHandTrackingSupported, (jboolean) aIsSupported);
+    CheckJNIException(sEnv, __FUNCTION__);
+}
+
+void
+VRBrowser::OnControllersAvailable() {
+    if (!ValidateMethodID(sEnv, sActivity, sOnControllersAvailable, __FUNCTION__)) { return; }
+    sEnv->CallVoidMethod(sActivity, sOnControllersAvailable);
+    CheckJNIException(sEnv, __FUNCTION__);
+
+}
+
+void
+VRBrowser::ChangeWindowDistance(jfloat aDelta) {
+    if (!ValidateMethodID(sEnv, sActivity, sChangeWindowDistance, __FUNCTION__)) { return; }
+    sEnv->CallVoidMethod(sActivity, sChangeWindowDistance, aDelta);
+    CheckJNIException(sEnv, __FUNCTION__);
+}
 
 } // namespace crow

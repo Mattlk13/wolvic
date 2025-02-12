@@ -17,7 +17,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.net.Uri;
-import android.preference.PreferenceManager;
+import android.text.format.Formatter;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Gravity;
@@ -36,6 +36,7 @@ import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.core.content.FileProvider;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.preference.PreferenceManager;
 
 import com.igalia.wolvic.R;
 import com.igalia.wolvic.VRBrowserActivity;
@@ -47,16 +48,20 @@ import com.igalia.wolvic.browser.SessionChangeListener;
 import com.igalia.wolvic.browser.SettingsStore;
 import com.igalia.wolvic.browser.VideoAvailabilityListener;
 import com.igalia.wolvic.browser.api.WAllowOrDeny;
+import com.igalia.wolvic.browser.api.WDisplay;
 import com.igalia.wolvic.browser.api.WMediaSession;
 import com.igalia.wolvic.browser.api.WResult;
 import com.igalia.wolvic.browser.api.WSession;
+import com.igalia.wolvic.browser.api.WSessionSettings;
 import com.igalia.wolvic.browser.api.WWebResponse;
+import com.igalia.wolvic.browser.engine.EngineProvider;
 import com.igalia.wolvic.browser.engine.Session;
 import com.igalia.wolvic.browser.engine.SessionState;
 import com.igalia.wolvic.browser.engine.SessionStore;
 import com.igalia.wolvic.downloads.DownloadJob;
 import com.igalia.wolvic.downloads.DownloadsManager;
 import com.igalia.wolvic.telemetry.TelemetryService;
+import com.igalia.wolvic.ui.adapters.WebApp;
 import com.igalia.wolvic.ui.viewmodel.WindowViewModel;
 import com.igalia.wolvic.ui.views.library.LibraryPanel;
 import com.igalia.wolvic.ui.widgets.dialogs.PromptDialogWidget;
@@ -70,6 +75,8 @@ import com.igalia.wolvic.utils.ViewUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLConnection;
 import java.util.Arrays;
 import java.util.Collections;
@@ -101,7 +108,13 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
     public static final int DEACTIVATE_CURRENT_SESSION = 0;
     public static final int LEAVE_CURRENT_SESSION_ACTIVE = 1;
 
+    private final float MIN_SCALE = 0.5f;
+    private final float DEFAULT_SCALE = 1.0f;
+    private final float MAX_SCALE = 3.0f;
+
     private Surface mSurface;
+    private int mSurfaceWidth;
+    private int mSurfaceHeight;
     private int mWidth;
     private int mHeight;
     private int mHandle;
@@ -113,6 +126,7 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
     private PromptDialogWidget mAppDialog;
     private ContextMenuWidget mContextMenu;
     private SelectionActionWidget mSelectionMenu;
+    private OverlayContentWidget mPaymentHandler;
     private int mWidthBackup;
     private int mHeightBackup;
     private int mBorderWidth;
@@ -140,14 +154,16 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
     private CopyOnWriteArrayList<Runnable> mSetViewQueuedCalls;
     private SharedPreferences mPrefs;
     private DownloadsManager mDownloadsManager;
+    private float mBrowserDensity;
 
     public interface WindowListener {
         default void onFocusRequest(@NonNull WindowWidget aWindow) {}
         default void onBorderChanged(@NonNull WindowWidget aWindow) {}
         default void onSessionChanged(@NonNull Session aOldSession, @NonNull Session aSession) {}
-        default void onFullScreen(@NonNull WindowWidget aWindow, boolean aFullScreen) {}
+        default void onContentFullScreen(@NonNull WindowWidget aWindow, boolean aFullScreen) {}
         default void onMediaFullScreen(@NonNull final WMediaSession mediaSession, boolean aFullScreen) {}
         default void onVideoAvailabilityChanged(@NonNull WindowWidget aWindow) {}
+        default void onKioskMode(WindowWidget aWindow, boolean isKioskMode) {}
     }
 
     @Override
@@ -192,6 +208,10 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
                 .get(String.valueOf(hashCode()), WindowViewModel.class);
         mViewModel.setIsPrivateSession(mSession.isPrivateMode());
         mViewModel.setUrl(mSession.getCurrentUri());
+        mViewModel.setIsDesktopMode(mSession.getUaMode() == WSessionSettings.USER_AGENT_MODE_DESKTOP);
+
+        // re-center the front window when its height changes
+        mViewModel.getHeight().observe((VRBrowserActivity) getContext(), observableInt -> centerFrontWindowIfNeeded());
 
         mUIThreadExecutor = ((VRBrowserApplication)getContext().getApplicationContext()).getExecutors().mainThread();
 
@@ -199,6 +219,7 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
         setupListeners(mSession);
 
         mLibrary = new LibraryPanel(aContext);
+        mLibrary.setController(this::showPanel);
 
         SessionStore.get().getBookmarkStore().addListener(mBookmarksListener);
 
@@ -241,10 +262,9 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
         aPlacement.height = SettingsStore.getInstance(getContext()).getWindowHeight() + mBorderWidth * 2;
         aPlacement.worldWidth = WidgetPlacement.floatDimension(getContext(), R.dimen.window_world_width) *
                 (float)windowWidth / (float)SettingsStore.WINDOW_WIDTH_DEFAULT;
-        aPlacement.density = 1.0f;
+        aPlacement.density = getBrowserDensity();
         aPlacement.visible = true;
         aPlacement.cylinder = true;
-        aPlacement.textureScale = 1.0f;
         aPlacement.name = "Window";
         // Check Windows.placeWindow method for remaining placement set-up
     }
@@ -313,7 +333,7 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
 
     @Override
     protected void onDismiss() {
-        if (mViewModel.getIsLibraryVisible().getValue().get()) {
+        if (mViewModel.getIsNativeContentVisible().getValue().get()) {
             if (!mLibrary.onBack()) {
                 hidePanel();
             }
@@ -376,11 +396,9 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
         }
     }
 
-    public void loadHomeIfBlank() {
+    public boolean isCurrentUriBlank() {
         final String currentUri = mSession.getCurrentUri();
-        if ((currentUri == null) || currentUri.isEmpty() || UrlUtils.isBlankUri(getContext(), mSession.getCurrentUri())) {
-            loadHome();
-        }
+        return (currentUri == null) || currentUri.isEmpty() || UrlUtils.isBlankUri(getContext(), currentUri);
     }
 
     public void loadHome() {
@@ -390,6 +408,15 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
         } else {
             mSession.loadUri(SettingsStore.getInstance(getContext()).getHomepage());
         }
+    }
+
+    private void recreateWidgetSurfaceIfNeeded(float prevDensity) {
+        if (prevDensity != mWidgetPlacement.density || !isLayer())
+            return;
+
+        // If the densities are the same updateWidget won't generate a new surface as the resulting
+        // texture sizes are equal. We need to force a new surface creation when using layers.
+        mWidgetManager.recreateWidgetSurface(this);
     }
 
     private void setView(View view, boolean switchSurface) {
@@ -404,6 +431,7 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
             addView(mView);
 
             if (switchSurface) {
+                float prevDensity = mWidgetPlacement.density;
                 mWidgetPlacement.density = getContext().getResources().getDisplayMetrics().density;
                 if (mTexture != null && mSurface != null && mRenderer == null) {
                     // Create the UI Renderer for the current surface.
@@ -416,6 +444,8 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
                 mWidgetManager.pushBackHandler(mBackHandler);
                 setWillNotDraw(false);
                 postInvalidate();
+
+                recreateWidgetSurfaceIfNeeded(prevDensity);
             }
         };
 
@@ -445,19 +475,25 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
                     }
                     mSurface = new Surface(mTexture);
                 }
-                mWidgetPlacement.density = 1.0f;
+                float prevDensity = mWidgetPlacement.density;
+                mWidgetPlacement.density = getBrowserDensity();
                 mWidgetManager.updateWidget(WindowWidget.this);
                 mWidgetManager.popWorldBrightness(WindowWidget.this);
                 mWidgetManager.popBackHandler(mBackHandler);
                 if (mTexture != null) {
                     resumeCompositor();
                 }
+                recreateWidgetSurfaceIfNeeded(prevDensity);
             }
         }
     }
 
-    public boolean isLibraryVisible() {
-        return mViewModel.getIsLibraryVisible().getValue().get();
+    public boolean isNativeContentVisible() {
+        return mViewModel.getIsNativeContentVisible().getValue().get();
+    }
+
+    public Windows.ContentType getCurrentContentType() {
+        return mViewModel.getCurrentContentType().getValue();
     }
 
     public int getWindowWidth() {
@@ -468,54 +504,51 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
         return mWidgetPlacement.height;
     }
 
-    public @Windows.PanelType
-    int getSelectedPanel() {
+    public Windows.ContentType getSelectedPanel() {
         return mLibrary.getSelectedPanelType();
     }
 
     private void hideLibraryPanel() {
-        if (mViewModel.getIsLibraryVisible().getValue().get()) {
+        if (mViewModel.getIsNativeContentVisible().getValue().get()) {
             hidePanel(true);
-        }
-    }
-
-    public void switchPanel(@Windows.PanelType int panelType) {
-        if (mViewModel.getIsLibraryVisible().getValue().get()) {
-            hidePanel(true);
-
-        } else {
-            showPanel(panelType, true);
         }
     }
 
     Runnable mRestoreFirstPaint;
 
-    public void showPanel(@Windows.PanelType int panelType) {
-        showPanel(panelType, true);
+    public void showPanel(Windows.ContentType panelType) {
+        if (panelType == Windows.ContentType.WEB_CONTENT) {
+            hidePanel();
+        } else {
+            showPanel(panelType, true);
+        }
     }
 
-    private void showPanel(@Windows.PanelType int panelType, boolean switchSurface) {
-        if (mLibrary != null) {
-            if (mView == null) {
-                setView(mLibrary, switchSurface);
-                mLibrary.selectPanel(panelType);
-                mLibrary.onShow();
-                mViewModel.setIsPanelVisible(true);
-                if (mRestoreFirstPaint == null && !isFirstPaintReady() && (mFirstDrawCallback != null) && (mSurface != null)) {
-                    final Runnable firstDrawCallback = mFirstDrawCallback;
-                    onFirstContentfulPaint(mSession.getWSession());
-                    mRestoreFirstPaint = () -> {
-                        setFirstPaintReady(false);
-                        setFirstDrawCallback(firstDrawCallback);
-                        if (mWidgetManager != null) {
-                            mWidgetManager.updateWidget(WindowWidget.this);
-                        }
-                    };
-                }
+    private void showPanel(Windows.ContentType contentType, boolean switchSurface) {
+        if (mLibrary == null) {
+            return;
+        }
 
-            } else if (mView == mLibrary) {
-                mLibrary.selectPanel(panelType);
+        mViewModel.setIsFindInPage(false);
+        mViewModel.setCurrentContentType(contentType);
+        mViewModel.setUrl(contentType.URL);
+        if (mView == null) {
+            setView(mLibrary, switchSurface);
+            mLibrary.selectPanel(contentType);
+            mLibrary.onShow();
+            if (mRestoreFirstPaint == null && !isFirstPaintReady() && (mFirstDrawCallback != null) && (mSurface != null)) {
+                final Runnable firstDrawCallback = mFirstDrawCallback;
+                onFirstContentfulPaint(mSession.getWSession());
+                mRestoreFirstPaint = () -> {
+                    setFirstPaintReady(false);
+                    setFirstDrawCallback(firstDrawCallback);
+                    if (mWidgetManager != null) {
+                        mWidgetManager.updateWidget(WindowWidget.this);
+                    }
+                };
             }
+        } else if (mView == mLibrary) {
+            mLibrary.selectPanel(contentType);
         }
     }
 
@@ -527,7 +560,7 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
         if (mView != null && mLibrary != null) {
             unsetView(mLibrary, switchSurface);
             mLibrary.onHide();
-            mViewModel.setIsPanelVisible(false);
+            mViewModel.setCurrentContentType(Windows.ContentType.WEB_CONTENT);
         }
         if (switchSurface && mRestoreFirstPaint != null) {
             mRestoreFirstPaint.run();
@@ -627,13 +660,34 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
     }
 
     public float getCurrentScale() {
-        float currentAspect = getCurrentAspect();
-        float currentWorldHeight = mWidgetPlacement.worldWidth / currentAspect;
-        float currentArea = mWidgetPlacement.worldWidth * currentWorldHeight;
-        float defaultWidth = WidgetPlacement.floatDimension(getContext(), R.dimen.window_world_width);
-        float defaultHeight = defaultWidth / SettingsStore.getInstance(getContext()).getWindowAspect();
-        float defaultArea = defaultWidth * defaultHeight;
-        return currentArea / defaultArea;
+        // This method walks back the calculations in getSizeForScale().
+        Pair<Float, Float> minWorldSize = getMinWorldSize();
+        Pair<Float, Float> maxWorldSize = getMaxWorldSize();
+        Pair<Float,Float> mainAxisMinMax;
+        float mainAxisCurrent, mainAxisDefault;
+
+        boolean isHorizontal = getCurrentAspect() >= 1.0;
+        if (isHorizontal) {
+            // horizontal orientation
+            mainAxisCurrent = (getWindowWidth() - mBorderWidth * 2) * WidgetPlacement.worldToDpRatio(getContext());
+            mainAxisDefault = WidgetPlacement.floatDimension(getContext(), R.dimen.window_world_width);
+            mainAxisMinMax = Pair.create(minWorldSize.first, maxWorldSize.first);
+        } else {
+            // vertical orientation
+            mainAxisCurrent = (getWindowHeight() - mBorderWidth * 2) * WidgetPlacement.worldToDpRatio(getContext());
+            mainAxisDefault = WidgetPlacement.floatDimension(getContext(), R.dimen.window_world_width) * getCurrentAspect();
+            mainAxisMinMax = Pair.create(minWorldSize.second, maxWorldSize.second);
+        }
+
+        if (mainAxisCurrent < mainAxisDefault) {
+            return (float) Math.pow(mainAxisCurrent / mainAxisDefault, 2);
+        } else if (mainAxisCurrent == mainAxisDefault) {
+            return DEFAULT_SCALE;
+        } else if (mainAxisCurrent == mainAxisMinMax.second) {
+            return MAX_SCALE;
+        } else {
+            return DEFAULT_SCALE + (mainAxisCurrent - mainAxisDefault) * (MAX_SCALE - DEFAULT_SCALE) / (mainAxisMinMax.second - mainAxisDefault);
+        }
     }
 
     public float getCurrentAspect() {
@@ -654,6 +708,7 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
             }
             mSession.updateLastUse();
             mWidgetManager.getNavigationBar().addNavigationBarListener(mNavigationBarListener);
+            mViewModel.setIsDesktopMode(mSession.getUaMode() == WSessionSettings.USER_AGENT_MODE_DESKTOP);
 
         } else {
             mWidgetManager.getNavigationBar().removeNavigationBarListener(mNavigationBarListener);
@@ -718,8 +773,10 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
                 setWillNotDraw(true);
                 return;
             }
-            mWidth = aWidth;
-            mHeight = aHeight;
+            mSurfaceWidth = aWidth;
+            mSurfaceHeight = aHeight;
+            mWidth = (int) (aWidth / getPlacement().textureScale);
+            mHeight = (int) (aHeight / getPlacement().textureScale);
             mTexture = aTexture;
             aTexture.setDefaultBufferSize(aWidth, aHeight);
             mSurface = new Surface(aTexture);
@@ -733,8 +790,10 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
             super.setSurface(aSurface, aWidth, aHeight, aFirstDrawCallback);
 
         } else {
-            mWidth = aWidth;
-            mHeight = aHeight;
+            mSurfaceWidth = aWidth;
+            mSurfaceHeight = aHeight;
+            mWidth = (int) (aWidth / getPlacement().textureScale);
+            mHeight = (int) (aHeight / getPlacement().textureScale);
             mSurface = aSurface;
             mFirstDrawCallback = aFirstDrawCallback;
             if (mSurface != null) {
@@ -747,7 +806,7 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
 
     private void callSurfaceChanged() {
         if (mSession != null && mSurface != null) {
-            mSession.surfaceChanged(mSurface, mBorderWidth, mBorderWidth, mWidth - mBorderWidth * 2, mHeight - mBorderWidth * 2);
+            mSession.surfaceChanged(mSurface, mBorderWidth, mBorderWidth, mSurfaceWidth - mBorderWidth * 2, mSurfaceHeight - mBorderWidth * 2);
             mSession.updateLastUse();
         }
     }
@@ -758,8 +817,10 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
             super.resizeSurface(aWidth, aHeight);
         }
 
-        mWidth = aWidth;
-        mHeight = aHeight;
+        mSurfaceWidth = aWidth;
+        mSurfaceHeight = aHeight;
+        mWidth = (int) (aWidth / getPlacement().textureScale);
+        mHeight = (int) (aHeight / getPlacement().textureScale);
         if (mTexture != null) {
             mTexture.setDefaultBufferSize(aWidth, aHeight);
         }
@@ -789,8 +850,6 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
                 for (WindowListener listener: mListeners) {
                     listener.onFocusRequest(this);
                 }
-                // Return to discard first click after focus
-                return;
             }
         } else if (aEvent.getAction() == MotionEvent.ACTION_UP || aEvent.getAction() == MotionEvent.ACTION_CANCEL) {
             mClickedAfterFocus = false;
@@ -827,8 +886,10 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
             updateBorder();
         }
 
-        if (!mActive) {
-            // Do not send touch events to not focused windows.
+        if (!mActive
+                && aEvent.getAction() != MotionEvent.ACTION_SCROLL
+                && aEvent.getAction() != MotionEvent.ACTION_HOVER_MOVE) {
+            // Do not send hover events to not focused windows, except for scrolling and moving events.
             return;
         }
 
@@ -909,13 +970,31 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
         if (mViewModel.getIsFullscreen().getValue().get() != isFullScreen) {
             mViewModel.setIsFullscreen(isFullScreen);
             for (WindowListener listener: mListeners) {
-                listener.onFullScreen(this, isFullScreen);
+                listener.onContentFullScreen(this, isFullScreen);
             }
         }
     }
 
     public boolean isFullScreen() {
         return mViewModel.getIsFullscreen().getValue().get();
+    }
+
+    public void setIsCurved(boolean isCurved) {
+        mViewModel.setIsCurved(isCurved);
+    }
+
+    public void setKioskMode(boolean isKioskMode) {
+        if (mViewModel.getIsKioskMode().getValue().get() == isKioskMode)
+            return;
+
+        mViewModel.setIsKioskMode(isKioskMode);
+        for (WindowListener listener : mListeners) {
+            listener.onKioskMode(this, isKioskMode);
+        }
+    }
+
+    public boolean isKioskMode() {
+        return mViewModel.getIsKioskMode().getValue().get();
     }
 
     public void addWindowListener(WindowListener aListener) {
@@ -943,7 +1022,7 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
     public void handleResizeEvent(float aWorldWidth, float aWorldHeight) {
         int width = getWindowWidth(aWorldWidth);
         float aspect = aWorldWidth / aWorldHeight;
-        int height = (int) Math.floor((float)width / aspect);
+        int height = (int) Math.floor((float) width / aspect);
         mWidgetPlacement.width = width + mBorderWidth * 2;
         mWidgetPlacement.height = height + mBorderWidth * 2;
         mWidgetPlacement.worldWidth = aWorldWidth;
@@ -952,6 +1031,37 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
 
         mViewModel.setWidth(mWidgetPlacement.width);
         mViewModel.setHeight(mWidgetPlacement.height);
+    }
+
+    public void reCenterFrontWindow() {
+        if (mWindowPlacement != Windows.WindowPlacement.FRONT)
+            return;
+
+        // default position
+        mWidgetPlacement.translationY = WidgetPlacement.unitFromMeters(getContext(), R.dimen.window_world_y);
+        mWidgetManager.updateWidget(this);
+        mWidgetManager.updateVisibleWidgets();
+    }
+
+    public void centerFrontWindowIfNeeded() {
+        if (!SettingsStore.getInstance(getContext()).isCenterWindows())
+            return;
+
+        if (mWindowPlacement != Windows.WindowPlacement.FRONT)
+            return;
+
+        // default position
+        mWidgetPlacement.translationY = WidgetPlacement.unitFromMeters(getContext(), R.dimen.window_world_y);
+        // center vertically relative to the default position
+        mWidgetPlacement.translationY += (SettingsStore.getInstance(getContext()).getWindowHeight() - mWidgetPlacement.height) / 2.0f;
+        mWidgetManager.updateWidget(this);
+        mWidgetManager.updateVisibleWidgets();
+    }
+
+    public void setOffset(float horizontalOffset, float verticalOffset) {
+        mWidgetPlacement.horizontalOffset = horizontalOffset;
+        mWidgetPlacement.verticalOffset = verticalOffset;
+        mWidgetManager.updateWidget(this);
     }
 
     @Override
@@ -1026,12 +1136,12 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
         }
         mWidgetPlacement.visible = aVisible;
         if (!aVisible) {
-            if (mViewModel.getIsLibraryVisible().getValue().get()) {
+            if (mViewModel.getIsNativeContentVisible().getValue().get()) {
                 mWidgetManager.popWorldBrightness(this);
             }
 
         } else {
-            if (mViewModel.getIsLibraryVisible().getValue().get()) {
+            if (mViewModel.getIsNativeContentVisible().getValue().get()) {
                 mWidgetManager.pushWorldBrightness(this, WidgetManagerDelegate.DEFAULT_DIM_BRIGHTNESS);
             }
         }
@@ -1081,6 +1191,7 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
             SessionStore.get().setActiveSession(mSession);
 
             mViewModel.setIsPrivateSession(mSession.isPrivateMode());
+            mViewModel.setIsDesktopMode(mSession.getUaMode() == WSessionSettings.USER_AGENT_MODE_DESKTOP);
 
             if (hidePanel) {
                 if (oldSession != null) {
@@ -1115,6 +1226,7 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
         aSession.getTextInput().setView(this);
 
         mViewModel.setIsPrivateSession(aSession.getSettings().getUsePrivateMode());
+        mViewModel.setIsDesktopMode(mSession.getUaMode() == WSessionSettings.USER_AGENT_MODE_DESKTOP);
 
         // Update the title bar media controls state
         boolean mediaAvailable = mSession.getActiveVideo() != null;
@@ -1345,6 +1457,9 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
         }
         mConfirmDialog.setTitle(promptData.getTitle());
         mConfirmDialog.setBody(promptData.getBody());
+        if (promptData.getTitleGravity() != Gravity.NO_GRAVITY) {
+            mConfirmDialog.setTitleGravity(promptData.getTitleGravity());
+        }
         if (promptData.getBodyGravity() != Gravity.NO_GRAVITY) {
             mConfirmDialog.setBodyGravity(promptData.getBodyGravity());
         }
@@ -1431,7 +1546,7 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
         if (mMaxWindowScale != aScale) {
             mMaxWindowScale = aScale;
 
-            Pair<Float, Float> maxSize = getSizeForScale(aScale);
+            Pair<Float, Float> maxSize = getSizeForScale(aScale, getCurrentAspect());
 
             if (mWidgetPlacement.worldWidth > maxSize.first) {
                 float currentAspect = (float) mWidgetPlacement.width / (float) mWidgetPlacement.height;
@@ -1453,18 +1568,77 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
         return mMaxWindowScale;
     }
 
-    public @NonNull Pair<Float, Float> getSizeForScale(float aScale) {
-        return getSizeForScale(aScale, SettingsStore.getInstance(getContext()).getWindowAspect());
+    public Pair<Float, Float> getMaxWorldSize() {
+        float defaultWidth = WidgetPlacement.floatDimension(getContext(), R.dimen.window_world_width);
+        float absoluteMaxWidth = SettingsStore.MAX_WINDOW_WIDTH_DEFAULT * WidgetPlacement.worldToDpRatio(getContext());
+        float currentMaxWidth = defaultWidth + (absoluteMaxWidth - defaultWidth) * (getMaxWindowScale() - DEFAULT_SCALE) / (MAX_SCALE - DEFAULT_SCALE);
+        float currentMaxHeight = SettingsStore.MAX_WINDOW_HEIGHT_DEFAULT * WidgetPlacement.worldToDpRatio(getContext());
+        return new Pair<>(currentMaxWidth, currentMaxHeight);
+    }
+
+    public Pair<Float, Float> getMinWorldSize() {
+        SettingsStore settings = SettingsStore.getInstance(getContext());
+        float minWidth = WidgetPlacement.floatDimension(getContext(), R.dimen.window_world_width) * MIN_SCALE;
+        float minHeight = minWidth * settings.getWindowHeight() / settings.getWindowWidth();
+        return new Pair<>(minWidth, minHeight);
+    }
+
+    public Pair<Float, Float> getDefaultWorldSize() {
+        SettingsStore settings = SettingsStore.getInstance(getContext());
+        float defaultWidth = settings.getWindowWidth() * WidgetPlacement.worldToDpRatio(getContext());
+        float defaultHeight = settings.getWindowHeight() * WidgetPlacement.worldToDpRatio(getContext());
+        return new Pair<>(defaultWidth, defaultHeight);
     }
 
     public @NonNull Pair<Float, Float> getSizeForScale(float aScale, float aAspect) {
-        float worldWidth = WidgetPlacement.floatDimension(getContext(), R.dimen.window_world_width) *
-                (float)SettingsStore.getInstance(getContext()).getWindowWidth() / (float)SettingsStore.WINDOW_WIDTH_DEFAULT;
-        float worldHeight = worldWidth / aAspect;
-        float area = worldWidth * worldHeight * aScale;
-        float targetWidth = (float) Math.sqrt(area * aAspect);
-        float targetHeight = targetWidth / aAspect;
-        return Pair.create(targetWidth, targetHeight);
+        Pair<Float, Float> minWorldSize = getMinWorldSize();
+        Pair<Float, Float> maxWorldSize = getMaxWorldSize();
+        Pair<Float, Float> defaultWorldSize = getDefaultWorldSize();
+        Pair<Float,Float> mainAxisMinMax, crossAxisMinMax;
+        float mainAxisDefault, mainAxisTarget;
+        float mainCrossAspect;
+
+        boolean isHorizontal = aAspect >= 1.0;
+        if (isHorizontal) {
+            // horizontal orientation
+            mainAxisDefault = defaultWorldSize.first;
+            mainAxisMinMax = Pair.create(minWorldSize.first, maxWorldSize.first);
+            crossAxisMinMax = Pair.create(minWorldSize.second, maxWorldSize.second);
+            mainCrossAspect = aAspect;
+        } else {
+            // vertical orientation
+            mainAxisDefault = defaultWorldSize.second;
+            mainAxisMinMax = Pair.create(minWorldSize.second, maxWorldSize.second);
+            crossAxisMinMax = Pair.create(minWorldSize.first, maxWorldSize.first);
+            mainCrossAspect = 1 / aAspect;
+        }
+
+        if (aScale < DEFAULT_SCALE) {
+            // Reduce the area of the window according to the desired scale, preserving the aspect ratio.
+            mainAxisTarget = (float) (mainAxisDefault * Math.sqrt(aScale));
+        } else if (aScale == DEFAULT_SCALE) {
+            // Main axis is set to the default size, cross axis will try to preserve the ratio.
+            mainAxisTarget = mainAxisDefault;
+        } else if (aScale >= getMaxWindowScale()) {
+            // Main axis is set to the maximum size, cross axis will try to preserve the ratio.
+            mainAxisTarget = mainAxisMinMax.second;
+        } else {
+            // Proportional between the default and maximum sizes.
+            mainAxisTarget = mainAxisDefault + (mainAxisMinMax.second - mainAxisDefault) * (aScale - DEFAULT_SCALE) / (MAX_SCALE - DEFAULT_SCALE);
+        }
+
+        float crossAxisTarget = mainAxisTarget / mainCrossAspect;
+
+        // Adjust in case crossAxisTarget might have fallen outside of the boundaries.
+        if (crossAxisTarget < crossAxisMinMax.first) {
+            crossAxisTarget = crossAxisMinMax.first;
+            mainAxisTarget = Math.max(mainAxisMinMax.first, Math.min(crossAxisTarget * mainCrossAspect, mainAxisMinMax.second));
+        } else if (crossAxisTarget > crossAxisMinMax.second) {
+            crossAxisTarget = crossAxisMinMax.second;
+            mainAxisTarget = Math.max(mainAxisMinMax.first, Math.min(crossAxisTarget * mainCrossAspect, mainAxisMinMax.second));
+        }
+
+        return isHorizontal ? Pair.create(mainAxisTarget, crossAxisTarget) : Pair.create(crossAxisTarget, mainAxisTarget);
     }
 
     private int getWindowWidth(float aWorldWidth) {
@@ -1554,18 +1728,24 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
 
     public void startDownload(@NonNull DownloadJob downloadJob, boolean showConfirmDialog) {
         if (showConfirmDialog) {
-            mWidgetManager.getFocusedWindow().showConfirmPrompt(
-                    R.drawable.ic_icon_downloads,
-                    getResources().getString(R.string.download_confirm_title),
-                    downloadJob.getFilename(),
-                    new String[]{
+            // As of O, the prefixes are used in their standard meanings in the SI system, so kB = 1000 bytes, MB = 1,000,000 bytes, etc.
+            // In Build.VERSION_CODES.N and earlier, powers of 1024 are used instead, with KB = 1024 bytes, MB = 1,048,576 bytes, etc.
+            String fileSize = downloadJob.getContentLength() > 0 ? "<br>" + Formatter.formatFileSize(getContext(), downloadJob.getContentLength()) : "";
+            mWidgetManager.getFocusedWindow().showConfirmPrompt(new PromptData.Builder()
+                    .withIconRes(R.drawable.ic_icon_downloads)
+                    .withTitle(getResources().getString(R.string.download_confirm_title))
+                    .withTitleGravity(Gravity.START)
+                    .withBody(downloadJob.getFilename() + fileSize)
+                    .withBodyGravity(Gravity.START)
+                    .withBtnMsg(new String[]{
                             getResources().getString(R.string.download_confirm_cancel),
-                            getResources().getString(R.string.download_confirm_download)},
-                    (index, isChecked) -> {
-                        if (index == PromptDialogWidget.POSITIVE) {
-                            mDownloadsManager.startDownload(downloadJob);
-                        }
-                    }
+                            getResources().getString(R.string.download_confirm_download)})
+                    .withCallback((index, isChecked) -> {
+                            if (index == PromptDialogWidget.POSITIVE) {
+                                mDownloadsManager.startDownload(downloadJob);
+                            }
+                        })
+                    .build()
             );
         } else {
             mDownloadsManager.startDownload(downloadJob);
@@ -1596,6 +1776,11 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
 
         // We don't show the menu for blobs
         if (UrlUtils.isBlobUri(element.srcUri)) {
+            return;
+        }
+
+        // We don't show the menu in kiosk mode
+        if (isKioskMode()) {
             return;
         }
 
@@ -1649,8 +1834,20 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
         // We don't want to trigger downloads of already downloaded files that we can't open
         // so we let the system handle it.
         if (!UrlUtils.isFileUri(webResponseInfo.uri())) {
-            DownloadJob job = DownloadJob.fromUri(webResponseInfo.uri());
-            startDownload(job, true);
+            DownloadJob job;
+            if (UrlUtils.isBlobUri(webResponseInfo.uri())) {
+                String uri = webResponseInfo.uri();
+                if (uri.startsWith("blob:null/")) {
+                    // Fix uri when download from a HTML page file stored in local storage
+                    uri = uri.replaceFirst("^blob:null/", "blob:http://localhost/");
+                }
+                job = DownloadJob.fromUri(uri, webResponseInfo.headers(), webResponseInfo.body());
+            } else {
+                job = DownloadJob.fromUri(webResponseInfo.uri(), webResponseInfo.headers());
+            }
+            // Don't show the confirmation dialog when we are in WebXR, because it will not be visible.
+            boolean showConfirmDialog = !mWidgetManager.isWebXRPresenting();
+            startDownload(job, showConfirmDialog);
 
         } else {
             File file = new File(webResponseInfo.uri().substring("file://".length()));
@@ -1688,6 +1885,26 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
                         getResources().getString(R.string.download_open_file_open_unsupported_body),
                         null);
             }
+        }
+    }
+
+    @Override
+    public void onShowPaymentHandler(@NonNull WSession session, @NonNull WDisplay display, @NonNull OnPaymentHandlerCallback callback) {
+        assert mPaymentHandler == null;
+        mPaymentHandler = new OverlayContentWidget(getContext());
+        mPaymentHandler.setDelegates(session, display, callback);
+
+        mPaymentHandler.getPlacement().parentHandle = getHandle();
+        mPaymentHandler.attachToWindow(this);
+        mPaymentHandler.show(KEEP_FOCUS);
+    }
+
+    @Override
+    public void onHidePaymentHandler(@NonNull WSession session) {
+        if (mPaymentHandler != null) {
+            mPaymentHandler.hide(REMOVE_WIDGET);
+            mPaymentHandler.releaseWidget();
+            mPaymentHandler = null;
         }
     }
 
@@ -1779,6 +1996,8 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
         mViewModel.setIsDrmUsed(false);
         mViewModel.setIsMediaAvailable(false);
         mViewModel.setIsMediaPlaying(false);
+        mViewModel.setIsWebApp(false);
+        mViewModel.setIsFindInPage(false);
 
         if (StringUtils.isEmpty(url)) {
             mViewModel.setIsBookmarked(false);
@@ -1789,6 +2008,11 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
                 return null;
             });
         }
+    }
+
+    @Override
+    public void onWebAppManifest(@NonNull WSession session, @NonNull WebApp webAppManifest) {
+        mViewModel.setIsWebApp(true);
     }
 
     @Override
@@ -1809,16 +2033,16 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
         Uri uri = Uri.parse(aRequest.uri);
         if (UrlUtils.isAboutPage(uri.toString())) {
             if(UrlUtils.isBookmarksUrl(uri.toString())) {
-                showPanel(Windows.BOOKMARKS);
+                showPanel(Windows.ContentType.BOOKMARKS);
 
             } else if (UrlUtils.isHistoryUrl(uri.toString())) {
-                showPanel(Windows.HISTORY);
+                showPanel(Windows.ContentType.HISTORY);
 
             } else if (UrlUtils.isDownloadsUrl(uri.toString())) {
-                showPanel(Windows.DOWNLOADS);
+                showPanel(Windows.ContentType.DOWNLOADS);
 
             } else if (UrlUtils.isAddonsUrl(uri.toString())) {
-                showPanel(Windows.ADDONS);
+                showPanel(Windows.ContentType.ADDONS);
 
             } else {
                 hideLibraryPanel();
@@ -1836,6 +2060,7 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
                 mWidgetManager.requestPermission(
                         aRequest.uri,
                         android.Manifest.permission.READ_EXTERNAL_STORAGE,
+                        WidgetManagerDelegate.OriginatorType.WEBSITE,
                         new WSession.PermissionDelegate.Callback() {
                             @Override
                             public void grant() {
@@ -1851,6 +2076,8 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
             }
         }
 
+        mViewModel.setIsDesktopMode(mSession.getUaMode() == WSessionSettings.USER_AGENT_MODE_DESKTOP);
+
         result.complete(WAllowOrDeny.ALLOW);
         return result;
     }
@@ -1861,7 +2088,7 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
     public void onHistoryStateChange(@NonNull WSession session, @NonNull HistoryList historyList) {
         if (!mSession.isPrivateMode()) {
             for (HistoryItem item : historyList.getItems()) {
-                SessionStore.get().getHistoryStore().recordObservation(item.getUri(), new PageObservation(item.getTitle()));
+                SessionStore.get().getHistoryStore().recordObservation(item.getUri(), new PageObservation(item.getTitle(), null));
             }
         }
     }
@@ -1915,11 +2142,11 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
             redirectSource = RedirectSource.TEMPORARY;
 
         } else {
-            redirectSource = RedirectSource.NOT_A_SOURCE;
+            redirectSource = null;
         }
 
         SessionStore.get().getHistoryStore().recordVisit(url, new PageVisit(visitType, redirectSource));
-        SessionStore.get().getHistoryStore().recordObservation(url, new PageObservation(url));
+        SessionStore.get().getHistoryStore().recordObservation(url, new PageObservation(url, null));
 
         return WResult.fromValue(true);
     }
@@ -2012,7 +2239,7 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
             float ratio = WidgetPlacement.worldToWindowRatio(getContext());
             selectionRect = new RectF(
                     clientRect.left * ratio,
-                    clientRect.top* ratio,
+                    clientRect.top * ratio,
                     clientRect.right * ratio,
                     clientRect.bottom * ratio
             );
@@ -2084,9 +2311,16 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
 
     @Override
     public boolean onHandleExternalRequest(@NonNull String url) {
-        if (UrlUtils.isEngineSupportedScheme(url)) {
+        URI uri;
+        try {
+            uri = UrlUtils.parseUri(url);
+            if (uri.getScheme() == null)
+                return false;
+        } catch (URISyntaxException e) {
             return false;
-
+        }
+        if (UrlUtils.isEngineSupportedScheme(uri, mSession.getWSession().getUrlUtilsVisitor())) {
+            return false;
         } else {
             Intent intent;
             try {
@@ -2125,5 +2359,12 @@ public class WindowWidget extends UIWidget implements SessionChangeListener,
 
             return true;
         }
+    }
+
+    private float getBrowserDensity() {
+        if (mBrowserDensity == 0) {
+            mBrowserDensity = EngineProvider.INSTANCE.getOrCreateRuntime(getContext()).getDensity();
+        }
+        return mBrowserDensity;
     }
 }

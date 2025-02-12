@@ -24,12 +24,7 @@ class NavigationDelegateImpl implements GeckoSession.NavigationDelegate {
     }
 
     @Override
-    public void onLocationChange(@NonNull GeckoSession session, @Nullable String url) {
-        mDelegate.onLocationChange(mSession, url);
-    }
-
-    @Override
-    public void onLocationChange(@NonNull GeckoSession session, @Nullable String url, @NonNull List<GeckoSession.PermissionDelegate.ContentPermission> perms) {
+    public void onLocationChange(@NonNull GeckoSession session, @Nullable String url, @NonNull List<GeckoSession.PermissionDelegate.ContentPermission> perms, @NonNull Boolean hasUserGesture) {
         mDelegate.onLocationChange(mSession, url);
     }
 
@@ -58,7 +53,7 @@ class NavigationDelegateImpl implements GeckoSession.NavigationDelegate {
     @Nullable
     @Override
     public GeckoResult<GeckoSession> onNewSession(@NonNull GeckoSession session, @NonNull String uri) {
-        GeckoResult<WSession> result = ResultImpl.from(mDelegate.onNewSession(mSession, uri));
+        GeckoResult<WSession> result = ResultImpl.from(mDelegate.onNewSession(mSession, uri, null));
         if (result == null) {
             return null;
         }

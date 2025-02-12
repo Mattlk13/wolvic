@@ -7,7 +7,6 @@ import android.os.Bundle;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
-import androidx.fragment.app.FragmentManager;
 
 import com.igalia.wolvic.browser.api.WContentBlocking;
 import com.igalia.wolvic.browser.api.WResult;
@@ -15,7 +14,7 @@ import com.igalia.wolvic.browser.api.WRuntime;
 import com.igalia.wolvic.browser.api.WRuntimeSettings;
 import com.igalia.wolvic.browser.api.WWebExtensionController;
 
-import org.mozilla.gecko.CrashHandler;
+import org.mozilla.geckoview.CrashHandler;
 import org.mozilla.geckoview.ContentBlocking;
 import org.mozilla.geckoview.CrashReporter;
 import org.mozilla.geckoview.GeckoRuntime;
@@ -50,12 +49,12 @@ public class RuntimeImpl implements WRuntime {
                         .enhancedTrackingProtectionLevel(ContentBlockingDelegateImpl.toGeckoEtpLevel(settings.getContentBlocking().getEnhancedTrackingProtectionLevel()))
                         .cookieBehavior(ContentBlockingDelegateImpl.toGeckoCookieBehavior(settings.getContentBlocking().getCookieBehavior()))
                         .cookieBehaviorPrivateMode(ContentBlockingDelegateImpl.toGeckoCookieBehavior(settings.getContentBlocking().getCookieBehaviorPrivate()))
-                        .cookieLifetime(ContentBlockingDelegateImpl.toGeckoCookieLifetime(settings.getContentBlocking().getCookieLifetime()))
                         .safeBrowsing(ContentBlockingDelegateImpl.toGeckoSafeBrowsing(settings.getContentBlocking().getSafeBrowsing()))
                         .build())
                 .displayDensityOverride(settings.getDisplayDensityOverride())
                 .remoteDebuggingEnabled(settings.isRemoteDebugging())
                 .displayDpiOverride(settings.getDisplayDpiOverride())
+                .enterpriseRootsEnabled(settings.isEnterpriseRootsEnabled())
                 .screenSizeOverride(settings.getScreenWidthOverride(), settings.getScreenHeightOverride())
                 .inputAutoZoomEnabled(settings.isInputAutoZoomEnabled())
                 .doubleTapZoomingEnabled(settings.isDoubleTapZoomingEnabled())
@@ -100,13 +99,13 @@ public class RuntimeImpl implements WRuntime {
     @NonNull
     @Override
     public void setUpLoginPersistence(Lazy<LoginsStorage> storage) {
-        mRuntime.setAutocompleteStorageDelegate(GeckoAutocompleteDelegateWrapper.create(storage));
+        mRuntime.setAutocompleteStorageDelegate(GeckoAutocompleteDelegateWrapper.create(storage, mSettings.isAutofillLoginsEnabled()));
     }
 
     @NonNull
     @Override
     public Client createFetchClient(Context context) {
-        return GeckoViewFetchClient.create(context, mExecutor);
+        return GeckoViewFetchClient.create(mExecutor);
     }
 
     @Override
@@ -115,8 +114,14 @@ public class RuntimeImpl implements WRuntime {
     }
 
     @Override
-    public void setFragmentManager(@NonNull FragmentManager fragmentManager, @NonNull ViewGroup container) {
+    public void setContainerView(@NonNull ViewGroup containerView) {
         // No op. Gecko doesn't require views to render GeckoSessions. See GeckoDisplay.
+    }
+
+    @Override
+    public float getDensity() {
+        // GeckoDisplay uses 1.0 density and internally scales the devicePixelRatio to provided Surface.
+        return 1.0f;
     }
 
     @Override
@@ -139,7 +144,7 @@ public class RuntimeImpl implements WRuntime {
     public Thread.UncaughtExceptionHandler createCrashHandler(Context appContext, Class<? extends Service> handlerService) {
         return new CrashHandler(appContext, handlerService) {
             @Override
-            protected Bundle getCrashExtras(final Thread thread, final Throwable exc) {
+            public Bundle getCrashExtras(final Thread thread, final Throwable exc) {
                 final Bundle extras = super.getCrashExtras(thread, exc);
                 if (extras == null) {
                     return null;
@@ -156,7 +161,7 @@ public class RuntimeImpl implements WRuntime {
     @NonNull
     @Override
     public CrashReportIntent getCrashReportIntent() {
-        return new CrashReportIntent(GeckoRuntime.ACTION_CRASHED, GeckoRuntime.EXTRA_MINIDUMP_PATH, GeckoRuntime.EXTRA_EXTRAS_PATH, GeckoRuntime.EXTRA_CRASH_FATAL);
+        return new CrashReportIntent(GeckoRuntime.ACTION_CRASHED, GeckoRuntime.EXTRA_MINIDUMP_PATH, GeckoRuntime.EXTRA_EXTRAS_PATH, GeckoRuntime.EXTRA_CRASH_PROCESS_TYPE);
     }
 
     static int toGeckoColorScheme(@WRuntimeSettings.ColorScheme int flags) {

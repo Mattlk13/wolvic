@@ -70,7 +70,7 @@ struct Widget::State {
   void Initialize(const int aHandle, const WidgetPlacementPtr& aPlacement, const int32_t aTextureWidth, const int32_t aTextureHeight,
                   const QuadPtr& aQuad, const CylinderPtr& aCylinder) {
     handle = (uint32_t)aHandle;
-    name = "crow::Widget-" + std::to_string(handle);
+    name = aPlacement->name + '_' + std::to_string(handle);
     vrb::RenderContextPtr render = context.lock();
     if (!render) {
       return;
@@ -174,20 +174,34 @@ struct Widget::State {
     UpdateResizerTransform();
   }
 
-  void AdjustCylinderRotation(const float radius) {
+  void AdjustCylinderRotation(const float radius, const vrb::Matrix* uiYaw = nullptr) {
     const float x = transform->GetTransform().GetTranslation().x();
+    const bool hasCylinderLayer = cylinder && cylinder->GetLayer();
+    auto setCylinderLayerTransformIfNeeded = [&](const vrb::Matrix& rotation) {
+        if (!hasCylinderLayer)
+          return;
+        cylinder->GetLayer()->SetRotation(uiYaw ? rotation.PreMultiply(*uiYaw) : rotation);
+    };
+
     if (x != 0.0f && placement->cylinderMapRadius > 0) {
       // Automatically adjust correct yaw angle & position for the cylinders not centered on the X axis
       const float perimeter = 2.0f * radius * (float)M_PI;
       float angle = 0.5f * (float)M_PI - x / perimeter * 2.0f * (float)M_PI;
       float delta = placement->cylinderMapRadius - radius;
       vrb::Matrix transform = vrb::Matrix::Rotation(vrb::Vector(-cosf(angle), 0.0f, sinf(angle)));
+      setCylinderLayerTransformIfNeeded(transform);
       transform.PreMultiplyInPlace(vrb::Matrix::Translation(vrb::Vector(0.0f, 0.0f, -delta)));
       transform.PostMultiplyInPlace(vrb::Matrix::Translation(vrb::Vector(-x, 0.0f, delta)));
       transformContainer->SetTransform(transform);
     } else {
-      transformContainer->SetTransform(vrb::Matrix::Identity());
+      auto identity = vrb::Matrix::Identity();
+      // We must reset the identity here because the current front Window might have been the left
+      // or the right window previously.
+      setCylinderLayerTransformIfNeeded(identity);
+      transformContainer->SetTransform(identity);
     }
+    if (hasCylinderLayer)
+      cylinder->GetLayer()->SetRadius(radius);
   }
 
   void RemoveResizer() {
@@ -273,6 +287,15 @@ Widget::SetSurfaceTextureSize(int32_t aWidth, int32_t aHeight) {
   } else {
     m.cylinder->SetTextureSize(aWidth, aHeight);
     m.UpdateCylinderMatrix();
+  }
+}
+
+void
+Widget::RecreateSurface() {
+  if (m.quad) {
+    m.quad->RecreateSurface();
+  } else {
+    m.cylinder->RecreateSurface();
   }
 }
 
@@ -647,8 +670,16 @@ void Widget::LayoutQuadWithCylinderParent(const WidgetPtr& aParent) {
     // The widget is flat and the parent is a cylinder.
     // Adjust the widget rotation based on the parent cylinder
     // e.g. rotate the tray based on the parent cylindrical window.
-    const float radius = cylinder->GetTransformNode()->GetTransform().GetScale().x();
-    m.AdjustCylinderRotation(radius);
+    auto x = m.transform->GetTransform().GetTranslation().x();
+    if (x != 0.0) {
+      auto radius = m.placement->cylinderMapRadius;
+      auto angle = M_PI_2 - atan(x/radius);
+      vrb::Matrix transform = vrb::Matrix::Rotation(vrb::Vector(-cosf(angle), 0.0f, sinf(angle)));
+      transform.PostMultiplyInPlace(vrb::Matrix::Translation(vrb::Vector(-x, 0.0f, 0.0f)));
+      m.transformContainer->SetTransform(transform);
+    } else {
+      m.transformContainer->SetTransform(vrb::Matrix::Identity());
+    }
   } else {
     // The widget is flat and the parent is flat. Copy the parent transformContainer matrix (used for cylinder rotations)
     // because the parent widget can still be recursively rotated based on a parent cylinder.
@@ -657,6 +688,11 @@ void Widget::LayoutQuadWithCylinderParent(const WidgetPtr& aParent) {
     m.transformContainer->SetTransform(aParent->m.transformContainer->GetTransform());
   }
   m.UpdateResizerTransform();
+}
+
+void Widget::RecenterYawInCylinderLayer(const vrb::Matrix& reorientMatrix) {
+  const float radius = GetCylinder()->GetTransformNode()->GetTransform().GetScale().x();
+  m.AdjustCylinderRotation(radius, &reorientMatrix);
 }
 
 Widget::Widget(State& aState, vrb::RenderContextPtr& aContext) : m(aState) {

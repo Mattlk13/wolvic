@@ -7,10 +7,20 @@ import androidx.annotation.NonNull;
 import com.igalia.wolvic.R;
 import com.igalia.wolvic.ui.callbacks.DownloadsContextMenuCallback;
 
+import java.util.EnumSet;
+
 public class DownloadsContextMenuWidget extends LibraryContextMenuWidget {
 
-    public DownloadsContextMenuWidget(Context aContext, LibraryContextMenuItem item, boolean canOpenWindows) {
-        super(aContext, item, canOpenWindows, false);
+    public DownloadsContextMenuWidget(Context aContext, LibraryContextMenuItem item,
+                                      boolean canOpenWindows) {
+        super(aContext, item, getAdditionalActions(canOpenWindows));
+    }
+
+    private static EnumSet<Action> getAdditionalActions(boolean canOpenWindows) {
+        EnumSet<Action> additionalActions = EnumSet.noneOf(Action.class);
+        if (canOpenWindows)
+            additionalActions.add(Action.OPEN_WINDOW);
+        return additionalActions;
     }
 
     public static class DownloadsContextMenuItem extends LibraryContextMenuItem {
@@ -29,7 +39,8 @@ public class DownloadsContextMenuWidget extends LibraryContextMenuWidget {
 
     }
 
-    protected void setupCustomMenuItems(boolean canOpenWindows, boolean isBookmarked) {
+    @Override
+    protected void setupCustomMenuItems(EnumSet<Action> additionalActions) {
         mItems.add(new MenuItem(getContext().getString(
                 R.string.download_context_delete),
                 R.drawable.ic_icon_library_clearfromlist,

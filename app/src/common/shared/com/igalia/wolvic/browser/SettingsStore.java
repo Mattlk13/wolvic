@@ -3,14 +3,16 @@ package com.igalia.wolvic.browser;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.StrictMode;
-import android.preference.PreferenceManager;
 import android.util.Log;
 
+import androidx.annotation.FloatRange;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.preference.PreferenceManager;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -25,6 +27,7 @@ import com.igalia.wolvic.browser.engine.EngineProvider;
 import com.igalia.wolvic.speech.SpeechServices;
 import com.igalia.wolvic.telemetry.TelemetryService;
 import com.igalia.wolvic.ui.viewmodel.SettingsViewModel;
+import com.igalia.wolvic.ui.widgets.WidgetManagerDelegate;
 import com.igalia.wolvic.ui.widgets.menus.library.SortingContextMenuWidget;
 import com.igalia.wolvic.utils.DeviceType;
 import com.igalia.wolvic.utils.RemoteProperties;
@@ -66,6 +69,12 @@ public class SettingsStore {
     public static final int INTERNAL = 0;
     public static final int EXTERNAL = 1;
 
+    @IntDef(value = { TABS_LOCATION_TRAY, TABS_LOCATION_HORIZONTAL, TABS_LOCATION_VERTICAL})
+    public @interface TabsLocation {}
+    public static final int TABS_LOCATION_TRAY = 0;
+    public static final int TABS_LOCATION_HORIZONTAL = 1;
+    public static final int TABS_LOCATION_VERTICAL = 2;
+
     private Context mContext;
     private SharedPreferences mPrefs;
     private SettingsViewModel mSettingsViewModel;
@@ -73,30 +82,83 @@ public class SettingsStore {
     // Developer options default values
     public final static boolean REMOTE_DEBUGGING_DEFAULT = false;
     public final static boolean ENV_OVERRIDE_DEFAULT = false;
+    public final static boolean SYSTEM_ROOT_CA_DEFAULT = false;
     public final static boolean UI_HARDWARE_ACCELERATION_DEFAULT = true;
     public final static boolean UI_HARDWARE_ACCELERATION_DEFAULT_WAVEVR = false;
+    public final static boolean UI_HARDWARE_ACCELERATION_DEFAULT_MAGIC_LEAP_2 = false;
     public final static boolean PERFORMANCE_MONITOR_DEFAULT = true;
     public final static boolean DRM_PLAYBACK_DEFAULT = false;
     public final static int TRACKING_DEFAULT = WContentBlocking.EtpLevel.DEFAULT;
     public final static boolean NOTIFICATIONS_DEFAULT = true;
     public final static boolean SPEECH_DATA_COLLECTION_DEFAULT = false;
     public final static boolean SPEECH_DATA_COLLECTION_REVIEWED_DEFAULT = false;
+    public final static float WINDOW_DISTANCE_DEFAULT = BuildConfig.DEFAULT_WINDOW_DISTANCE;
     public final static int UA_MODE_DEFAULT = WSessionSettings.USER_AGENT_MODE_VR;
     public final static int INPUT_MODE_DEFAULT = 1;
-    public final static float DISPLAY_DENSITY_DEFAULT = 1.0f;
+
+    // The default density is defined at build time.
+    public final static float DISPLAY_DENSITY_DEFAULT = BuildConfig.DEFAULT_DENSITY;
+    // The DPI is calculated so the default window has a logical width of 1024 CSS pixels.
+    // For a density of 1.0, the DPI is 128 and the texture matches the logical size of the webpage.
+    // For a density of 1.5, the DPI of 192 and the resolution of the texture is twice the world size of the window.
+    public final static int DISPLAY_DPI_BASE = 128;
+    public final static int DISPLAY_DPI_DEFAULT = (int) (DISPLAY_DENSITY_DEFAULT * DISPLAY_DPI_BASE);
+    public final static int DISPLAY_DPI_MIN = 70;
+    public final static int DISPLAY_DPI_MAX = 300;
+    // World size: multiply by density to get the available resolution for the Web engine.
     public final static int WINDOW_WIDTH_DEFAULT = 800;
     public final static int WINDOW_HEIGHT_DEFAULT = 450;
-    public final static int DISPLAY_DPI_DEFAULT = 96;
+    // The maximum size is computed so the resulting texture fits within 2560x2560.
     public final static int MAX_WINDOW_WIDTH_DEFAULT = 1200;
-    public final static int MAX_WINDOW_HEIGHT_DEFAULT = 1200;
+    public final static int MAX_WINDOW_HEIGHT_DEFAULT = 800;
+    public enum WindowSizePreset {
+        PRESET_0(WINDOW_WIDTH_DEFAULT, WINDOW_HEIGHT_DEFAULT),
+        PRESET_1(750, 500),
+        PRESET_2(825, 550),
+        PRESET_3(900, 600);
+
+        public final int width;
+        public final int height;
+
+        WindowSizePreset(int width, int height) {
+            this.width = width;
+            this.height = height;
+        }
+        public static WindowSizePreset fromId(int id) {
+            if (id >= 0 && id < values().length) {
+                return values()[id];
+            } else {
+                return WINDOW_SIZE_PRESET_DEFAULT;
+            }
+        }
+        public static WindowSizePreset fromValues(int width, int height) {
+            for (WindowSizePreset preset : values()) {
+                if (preset.width == width && preset.height == height) {
+                    return preset;
+                }
+            }
+            return WINDOW_SIZE_PRESET_DEFAULT;
+        }
+    }
+    public final static WindowSizePreset WINDOW_SIZE_PRESET_DEFAULT = WindowSizePreset.PRESET_0;
+
     public final static int POINTER_COLOR_DEFAULT_DEFAULT = Color.parseColor("#FFFFFF");
     public final static int SCROLL_DIRECTION_DEFAULT = 0;
     public final static String ENV_DEFAULT = "cyberpunk";
-    public final static int MSAA_DEFAULT_LEVEL = BuildConfig.MSAA_LEVEL;
-    public final static boolean AUDIO_ENABLED = false;
+    public final static int MSAA_DEFAULT_LEVEL = 1;
+    public final static boolean AUDIO_ENABLED = BuildConfig.FLAVOR_backend == "chromium";
+    public final static boolean LATIN_AUTO_COMPLETE_ENABLED = false;
+    public final static boolean WINDOW_MOVEMENT_DEFAULT = false;
+    public final static @TabsLocation int TABS_LOCATION_DEFAULT = TABS_LOCATION_TRAY;
     public final static float CYLINDER_DENSITY_ENABLED_DEFAULT = 4680.0f;
+    public final static float HAPTIC_PULSE_DURATION_DEFAULT = 10.0f;
+    public final static float HAPTIC_PULSE_INTENSITY_DEFAULT = 1.0f;
+    public final static boolean HAPTIC_FEEDBACK_ENABLED = false;
+    public final static boolean CENTER_WINDOWS_DEFAULT = false;
     private final static long CRASH_RESTART_DELTA = 2000;
     public final static boolean AUTOPLAY_ENABLED = false;
+    public final static boolean HEAD_LOCK_DEFAULT = false;
+    public final static boolean OPEN_TABS_IN_BACKGROUND_DEFAULT = true;
     public final static boolean DEBUG_LOGGING_DEFAULT = BuildConfig.DEBUG;
     public final static boolean POP_UPS_BLOCKING_DEFAULT = true;
     public final static boolean WEBXR_ENABLED_DEFAULT = true;
@@ -111,11 +173,13 @@ public class SettingsStore {
     public final static int DOWNLOADS_SORTING_ORDER_DEFAULT = SortingContextMenuWidget.SORT_DATE_DESC;
     public final static boolean AUTOCOMPLETE_ENABLED = true;
     public final static boolean WEBGL_OUT_OF_PROCESS = false;
+    public final static boolean LOCAL_ADDON_ALLOWED = false;
     public final static int PREFS_LAST_RESET_VERSION_CODE = 0;
     public final static boolean PASSWORDS_ENCRYPTION_KEY_GENERATED = false;
     public final static boolean AUTOFILL_ENABLED = true;
     public final static boolean LOGIN_AUTOCOMPLETE_ENABLED = true;
     public final static String SEARCH_ENGINE_DEFAULT = "";
+    public final static @WidgetManagerDelegate.PointerMode int POINTER_MODE_DEFAULT = WidgetManagerDelegate.TRACKED_POINTER;
 
     // Enable telemetry by default (opt-out).
     public final static boolean CRASH_REPORTING_DEFAULT = false;
@@ -163,6 +227,7 @@ public class SettingsStore {
                     null,
                     Request.Redirect.FOLLOW,
                     Request.CookiePolicy.INCLUDE,
+                    false,
                     false
             );
 
@@ -172,7 +237,7 @@ public class SettingsStore {
                     String json = response.getBody().string(StandardCharsets.UTF_8);
                     SharedPreferences.Editor editor = mPrefs.edit();
                     editor.putString(mContext.getString(R.string.settings_key_remote_props), json);
-                    editor.commit();
+                    editor.apply();
 
                     mSettingsViewModel.setProps(json);
                 }
@@ -190,7 +255,7 @@ public class SettingsStore {
     public void setCrashReportingEnabled(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_crash), isEnabled);
-        editor.commit();
+        editor.apply();
     }
 
     public boolean isTelemetryEnabled() {
@@ -207,7 +272,7 @@ public class SettingsStore {
     public void setTelemetryEnabled(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_telemetry), isEnabled);
-        editor.commit();
+        editor.apply();
 
         // We send after enabling in case of opting-in
         if (isEnabled) {
@@ -231,13 +296,13 @@ public class SettingsStore {
     public void setTelemetryPingUpdateSent(boolean isSent) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_telemetry_status_update_sent), isSent);
-        editor.commit();
+        editor.apply();
     }
 
     public void setGeolocationData(String aGeolocationData) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putString(mContext.getString(R.string.settings_key_geolocation_data), aGeolocationData);
-        editor.commit();
+        editor.apply();
     }
 
     public String getGeolocationData() {
@@ -252,7 +317,7 @@ public class SettingsStore {
     public void setRemoteDebuggingEnabled(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_remote_debugging), isEnabled);
-        editor.commit();
+        editor.apply();
     }
 
 
@@ -268,7 +333,7 @@ public class SettingsStore {
     public void setDrmContentPlaybackEnabled(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_drm_playback), isEnabled);
-        editor.commit();
+        editor.apply();
 
         mSettingsViewModel.setIsDrmEnabled(isEnabled);
     }
@@ -281,9 +346,80 @@ public class SettingsStore {
     public void setTrackingProtectionLevel(int level) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putInt(mContext.getString(R.string.settings_key_tracking_protection_level), level);
-        editor.commit();
+        editor.apply();
 
         mSettingsViewModel.setIsTrackingProtectionEnabled(level != WContentBlocking.EtpLevel.NONE);
+    }
+
+    public boolean isSystemRootCAEnabled() {
+        return mPrefs.getBoolean(
+                mContext.getString(R.string.settings_key_system_root_ca), SYSTEM_ROOT_CA_DEFAULT);
+    }
+
+    public void setSystemRootCAEnabled(boolean isEnabled) {
+        SharedPreferences.Editor editor = mPrefs.edit();
+        editor.putBoolean(mContext.getString(R.string.settings_key_system_root_ca), isEnabled);
+        editor.apply();
+    }
+
+    public static boolean shouldStartWithPassthrougEnabled() {
+        return DeviceType.getType() == DeviceType.LenovoA3 || DeviceType.getType() == DeviceType.VisionGlass;
+    }
+
+    public boolean isStartWithPassthroughEnabled() {
+        return mPrefs.getBoolean(
+                mContext.getString(R.string.settings_key_start_with_passthrough), shouldStartWithPassthrougEnabled());
+    }
+
+    public void setStartWithPassthroughEnabled(boolean isEnabled) {
+        SharedPreferences.Editor editor = mPrefs.edit();
+        editor.putBoolean(mContext.getString(R.string.settings_key_start_with_passthrough), isEnabled);
+        editor.apply();
+    }
+
+    public boolean isLatinAutoCompleteEnabled() {
+        return mPrefs.getBoolean(
+                mContext.getString(R.string.settings_key_latin_auto_complete), LATIN_AUTO_COMPLETE_ENABLED);
+    }
+
+    public void setLatinAutoComplete(boolean isEnabled) {
+        SharedPreferences.Editor editor = mPrefs.edit();
+        editor.putBoolean(mContext.getString(R.string.settings_key_latin_auto_complete), isEnabled);
+        editor.apply();
+    }
+
+    public boolean isHeadLockEnabled() {
+        return mPrefs.getBoolean(
+                mContext.getString(R.string.settings_key_head_lock), HEAD_LOCK_DEFAULT);
+    }
+
+    public void setHeadLockEnabled(boolean isEnabled) {
+        SharedPreferences.Editor editor = mPrefs.edit();
+        editor.putBoolean(mContext.getString(R.string.settings_key_head_lock), isEnabled);
+        editor.apply();
+    }
+
+    public boolean isOpenTabsInBackgroundEnabled() {
+        return mPrefs.getBoolean(
+                mContext.getString(R.string.settings_key_open_tabs_in_background), OPEN_TABS_IN_BACKGROUND_DEFAULT);
+    }
+
+    public void setOpenTabsInBackgroundEnabled(boolean isEnabled) {
+        SharedPreferences.Editor editor = mPrefs.edit();
+        editor.putBoolean(mContext.getString(R.string.settings_key_open_tabs_in_background), isEnabled);
+        editor.apply();
+    }
+
+    @TabsLocation
+    public int getTabsLocation() {
+        return mPrefs.getInt(
+                mContext.getString(R.string.settings_key_tabs_location), TABS_LOCATION_DEFAULT);
+    }
+
+    public void setTabsLocation(@TabsLocation int tabsLocation) {
+        SharedPreferences.Editor editor = mPrefs.edit();
+        editor.putInt(mContext.getString(R.string.settings_key_tabs_location), tabsLocation);
+        editor.commit();
     }
 
     public boolean isEnvironmentOverrideEnabled() {
@@ -294,13 +430,17 @@ public class SettingsStore {
     public void setEnvironmentOverrideEnabled(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_environment_override), isEnabled);
-        editor.commit();
+        editor.apply();
     }
 
     public boolean isUIHardwareAccelerationEnabled() {
         boolean defaultValue = UI_HARDWARE_ACCELERATION_DEFAULT;
         if (DeviceType.isWaveBuild()) {
             defaultValue = UI_HARDWARE_ACCELERATION_DEFAULT_WAVEVR;
+        } else if (DeviceType.getType() == DeviceType.MagicLeap2) {
+            // Hardware acceleration causes several UI glitches when rendering widgets and
+            // also locks un the UI thread for several seconds.
+            defaultValue = UI_HARDWARE_ACCELERATION_DEFAULT_MAGIC_LEAP_2;
         }
         return mPrefs.getBoolean(
                 mContext.getString(R.string.settings_key_ui_hardware_acceleration), defaultValue);
@@ -309,7 +449,7 @@ public class SettingsStore {
     public void setUIHardwareAccelerationEnabled(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_ui_hardware_acceleration), isEnabled);
-        editor.commit();
+        editor.apply();
     }
 
     public boolean isPerformanceMonitorEnabled() {
@@ -320,7 +460,18 @@ public class SettingsStore {
     public void setPerformanceMonitorEnabled(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_performance_monitor), isEnabled);
-        editor.commit();
+        editor.apply();
+    }
+
+    @FloatRange(from = 0, to = 1)
+    public float getWindowDistance() {
+        return mPrefs.getFloat(mContext.getString(R.string.settings_key_window_distance), WINDOW_DISTANCE_DEFAULT);
+    }
+
+    public void setWindowDistance(@FloatRange(from = 0, to = 1) float distance) {
+        SharedPreferences.Editor editor = mPrefs.edit();
+        editor.putFloat(mContext.getString(R.string.settings_key_window_distance), distance);
+        editor.apply();
     }
 
     public int getUaMode() {
@@ -336,7 +487,7 @@ public class SettingsStore {
         }
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putInt(mContext.getString(R.string.settings_key_user_agent_version), checkedMode);
-        editor.commit();
+        editor.apply();
     }
 
     public int getInputMode() {
@@ -347,19 +498,19 @@ public class SettingsStore {
     public void setInputMode(int aTouchMode) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putInt(mContext.getString(R.string.settings_key_input_mode), aTouchMode);
-        editor.commit();
+        editor.apply();
     }
 
     public String getHomepage() {
         return mPrefs.getString(
                 mContext.getString(R.string.settings_key_homepage),
-                mContext.getString(R.string.homepage_url));
+                mContext.getString(R.string.HOMEPAGE_URL));
     }
 
     public void setHomepage(String aHomepage) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putString(mContext.getString(R.string.settings_key_homepage), aHomepage);
-        editor.commit();
+        editor.apply();
     }
 
     public float getDisplayDensity() {
@@ -370,30 +521,55 @@ public class SettingsStore {
     public void setDisplayDensity(float aDensity) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putFloat(mContext.getString(R.string.settings_key_display_density), aDensity);
-        editor.commit();
+        editor.apply();
     }
 
     public int getWindowWidth() {
-        return WINDOW_WIDTH_DEFAULT;
+        return mPrefs.getInt(
+                mContext.getString(R.string.settings_key_window_width), WINDOW_WIDTH_DEFAULT);
     }
 
     public int getWindowHeight() {
-        return WINDOW_HEIGHT_DEFAULT;
+        return mPrefs.getInt(
+                mContext.getString(R.string.settings_key_window_height), WINDOW_HEIGHT_DEFAULT);
+    }
+
+    public void setWindowSizePreset(int presetId) {
+        WindowSizePreset preset = WindowSizePreset.fromId(presetId);
+        SharedPreferences.Editor editor = mPrefs.edit();
+        editor.putInt(mContext.getString(R.string.settings_key_window_width), preset.width);
+        editor.putInt(mContext.getString(R.string.settings_key_window_height), preset.height);
+        editor.commit();
     }
 
     public float getWindowAspect() {
         return (float)getWindowWidth() / (float)getWindowHeight();
     }
 
+    public String getDeviceName() {
+        return mPrefs.getString(
+                mContext.getString(R.string.settings_key_device_name), DeviceType.getDeviceName(mContext));
+    }
+
+    public void setDeviceName(String aDeviceName) {
+        SharedPreferences.Editor editor = mPrefs.edit();
+        editor.putString(mContext.getString(R.string.settings_key_device_name), aDeviceName);
+        editor.apply();
+    }
+
     public int getDisplayDpi() {
-        return mPrefs.getInt(
-                mContext.getString(R.string.settings_key_display_dpi), DISPLAY_DPI_DEFAULT);
+        return Math.max(Math.min(mPrefs.getInt(
+                mContext.getString(R.string.settings_key_display_dpi), DISPLAY_DPI_DEFAULT), DISPLAY_DPI_MAX), DISPLAY_DPI_MIN);
     }
 
     public void setDisplayDpi(int aDpi) {
+        // Reject non-valid value
+        if (aDpi > DISPLAY_DPI_MAX || aDpi < DISPLAY_DPI_MIN) {
+            return;
+        }
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putInt(mContext.getString(R.string.settings_key_display_dpi), aDpi);
-        editor.commit();
+        editor.apply();
     }
 
     public int getMaxWindowWidth() {
@@ -411,7 +587,7 @@ public class SettingsStore {
     public void setEnvironment(String aEnv) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putString(mContext.getString(R.string.settings_key_env), aEnv);
-        editor.commit();
+        editor.apply();
     }
 
     public int getPointerColor() {
@@ -422,7 +598,7 @@ public class SettingsStore {
     public void setPointerColor(int color) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putInt(mContext.getString(R.string.settings_key_pointer_color), color);
-        editor.commit();
+        editor.apply();
     }
 
     public int getScrollDirection() {
@@ -436,23 +612,26 @@ public class SettingsStore {
         mCachedScrollDirection = aScrollDirection;
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putInt(mContext.getString(R.string.settings_key_scroll_direction), aScrollDirection);
-        editor.commit();
+        editor.apply();
     }
 
 
     public int getMSAALevel() {
+        // We could get the exact HarmonyOS version using the Huawei's ohos package but there is little
+        // point in adding a dependency just for that. We can do an alternate check.
+        boolean isHarmonyOS2 = DeviceType.isHVRBuild() && Build.VERSION.SDK_INT < Build.VERSION_CODES.S;
         return mPrefs.getInt(
-                mContext.getString(R.string.settings_key_msaa), MSAA_DEFAULT_LEVEL);
+                mContext.getString(R.string.settings_key_msaa), isHarmonyOS2 ? 0 : MSAA_DEFAULT_LEVEL);
     }
 
     public void setMSAALevel(int level) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putInt(mContext.getString(R.string.settings_key_msaa), level);
-        editor.commit();
+        editor.apply();
     }
 
     public boolean getLayersEnabled() {
-        if (DeviceType.isOculusBuild() && !mDisableLayers) {
+        if ((DeviceType.isOculusBuild() || DeviceType.isPicoXR()) && !mDisableLayers) {
             Log.i(LOGTAG, "Layers are enabled");
             return true;
         }
@@ -471,7 +650,7 @@ public class SettingsStore {
     public void setAudioEnabled(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_audio), isEnabled);
-        editor.commit();
+        editor.apply();
     }
 
     public String getVoiceSearchService() {
@@ -482,7 +661,7 @@ public class SettingsStore {
     public void setVoiceSearchService(String service) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putString(mContext.getString(R.string.settings_key_voice_search_service), service);
-        editor.commit();
+        editor.apply();
     }
 
     public String getVoiceSearchLocale() {
@@ -494,7 +673,7 @@ public class SettingsStore {
     public void setVoiceSearchLocale(String language) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putString(mContext.getString(R.string.settings_key_voice_search_language), language);
-        editor.commit();
+        editor.apply();
     }
 
     public String getDisplayLocale() {
@@ -506,7 +685,7 @@ public class SettingsStore {
     public void setDisplayLocale(String language) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putString(mContext.getString(R.string.settings_key_display_language), language);
-        editor.commit();
+        editor.apply();
     }
 
     public ArrayList<String> getContentLocales() {
@@ -533,7 +712,7 @@ public class SettingsStore {
         JSONArray json = new JSONArray(languages);
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putString(mContext.getString(R.string.settings_key_content_languages), json.toString());
-        editor.commit();
+        editor.apply();
     }
 
     public float getCylinderDensity() {
@@ -543,17 +722,68 @@ public class SettingsStore {
     public void setCylinderDensity(float aDensity) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putFloat(mContext.getString(R.string.settings_key_cylinder_density), aDensity);
-        editor.commit();
+        editor.apply();
     }
 
     public boolean isCurvedModeEnabled() {
         return getCylinderDensity() > 0;
     }
 
+    public float getHapticPulseDuration() {
+        return mPrefs.getFloat(mContext.getString(R.string.settings_key_haptic_pulse_duration), HAPTIC_PULSE_DURATION_DEFAULT);
+    }
+
+    public void setHapticPulseDuration(float aPulseDuration) {
+        SharedPreferences.Editor editor = mPrefs.edit();
+        editor.putFloat(mContext.getString(R.string.settings_key_haptic_pulse_duration), aPulseDuration);
+        editor.apply();
+    }
+
+    public float getHapticPulseIntensity() {
+        return mPrefs.getFloat(mContext.getString(R.string.settings_key_haptic_pulse_intensity), HAPTIC_PULSE_INTENSITY_DEFAULT);
+    }
+
+    public void setHapticPulseIntensity(float aPulseIntensity) {
+        SharedPreferences.Editor editor = mPrefs.edit();
+        editor.putFloat(mContext.getString(R.string.settings_key_haptic_pulse_intensity), aPulseIntensity);
+        editor.apply();
+    }
+
+    public void setHapticFeedbackEnabled(boolean isEnabled) {
+        SharedPreferences.Editor editor = mPrefs.edit();
+        editor.putBoolean(mContext.getString(R.string.settings_key_haptic_feedback_enabled), isEnabled);
+        editor.apply();
+    }
+
+    public boolean isHapticFeedbackEnabled() {
+        return mPrefs.getBoolean(mContext.getString(R.string.settings_key_haptic_feedback_enabled), HAPTIC_FEEDBACK_ENABLED);
+    }
+
+    public void setPointerMode(@WidgetManagerDelegate.PointerMode int pointerMode) {
+        SharedPreferences.Editor editor = mPrefs.edit();
+        editor.putInt(mContext.getString(R.string.settings_key_pointer_mode), pointerMode);
+        editor.apply();
+    }
+
+    public @WidgetManagerDelegate.PointerMode int getPointerMode() {
+        return mPrefs.getInt(mContext.getString(R.string.settings_key_pointer_mode), POINTER_MODE_DEFAULT);
+    }
+
+    public boolean isCenterWindows() {
+        return mPrefs.getBoolean(
+                mContext.getString(R.string.settings_key_center_windows), CENTER_WINDOWS_DEFAULT);
+    }
+
+    public void setCenterWindows(boolean isEnabled) {
+        SharedPreferences.Editor editor = mPrefs.edit();
+        editor.putBoolean(mContext.getString(R.string.settings_key_center_windows), isEnabled);
+        editor.apply();
+    }
+
     public void setSelectedKeyboard(Locale aLocale) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putString(mContext.getString(R.string.settings_key_keyboard_locale), aLocale.toLanguageTag());
-        editor.commit();
+        editor.apply();
     }
 
     public Locale getKeyboardLocale() {
@@ -573,7 +803,7 @@ public class SettingsStore {
                 SharedPreferences.Editor editor = mPrefs.edit();
                 editor.putLong(mContext.getString(R.string.settings_key_crash_restart_count), count);
                 editor.putLong(mContext.getString(R.string.settings_key_crash_restart_count_timestamp), -1);
-                editor.commit();
+                editor.apply();
             }
         }
         return count;
@@ -585,13 +815,13 @@ public class SettingsStore {
         count++;
         editor.putLong(mContext.getString(R.string.settings_key_crash_restart_count), count);
         editor.putLong(mContext.getString(R.string.settings_key_crash_restart_count_timestamp), System.currentTimeMillis());
-        editor.commit();
+        editor.apply();
     }
 
     public synchronized void resetCrashRestartCount() {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putLong(mContext.getString(R.string.settings_key_crash_restart_count), 0);
-        editor.commit();
+        editor.apply();
     }
 
     public boolean isSpeechDataCollectionEnabled() {
@@ -602,7 +832,7 @@ public class SettingsStore {
     public void setSpeechDataCollectionEnabled(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_speech_data_collection), isEnabled);
-        editor.commit();
+        editor.apply();
     }
 
     public boolean isNotificationsEnabled() {
@@ -613,7 +843,7 @@ public class SettingsStore {
     public void setNotificationsEnabled(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_notifications), isEnabled);
-        editor.commit();
+        editor.apply();
     }
 
     public boolean isSpeechDataCollectionReviewed() {
@@ -624,7 +854,7 @@ public class SettingsStore {
     public void setSpeechDataCollectionReviewed(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_speech_data_collection_reviewed), isEnabled);
-        editor.commit();
+        editor.apply();
     }
 
     public boolean isDebugLoggingEnabled() {
@@ -634,7 +864,7 @@ public class SettingsStore {
     public void setDebugLoggingEnabled(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_debug_logging), isEnabled);
-        editor.commit();
+        editor.apply();
     }
 
     public boolean isAutoplayEnabled() {
@@ -644,13 +874,13 @@ public class SettingsStore {
     public void setAutoplayEnabled(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_autoplay), isEnabled);
-        editor.commit();
+        editor.apply();
     }
 
     public void setPid(int aPid) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putInt(mContext.getString(R.string.settings_key_pid), aPid);
-        editor.commit();
+        editor.apply();
     }
 
     public int getPid() {
@@ -664,7 +894,7 @@ public class SettingsStore {
     public void setPopUpsBlockingEnabled(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_pop_up_blocking), isEnabled);
-        editor.commit();
+        editor.apply();
 
         mSettingsViewModel.setIsPopUpBlockingEnabled(isEnabled);
     }
@@ -676,7 +906,7 @@ public class SettingsStore {
     public void setWebXREnabled(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_webxr), isEnabled);
-        editor.commit();
+        editor.apply();
 
         mSettingsViewModel.setIsWebXREnabled(isEnabled);
     }
@@ -684,7 +914,7 @@ public class SettingsStore {
     public void setWhatsNewDisplayed(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_whats_new_displayed), isEnabled);
-        editor.commit();
+        editor.apply();
     }
 
     public boolean isWhatsNewDisplayed() {
@@ -702,7 +932,7 @@ public class SettingsStore {
 
             SharedPreferences.Editor editor = mPrefs.edit();
             editor.putString(mContext.getString(R.string.settings_key_fxa_last_sync), jsonObject.toString());
-            editor.commit();
+            editor.apply();
 
         } catch (Exception e) {
             Log.d(LOGTAG, e.getMessage());
@@ -734,7 +964,7 @@ public class SettingsStore {
     public void setRestoreTabsEnabled(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_restore_tabs), isEnabled);
-        editor.commit();
+        editor.apply();
     }
 
     public boolean isRestoreTabsEnabled() {
@@ -744,7 +974,7 @@ public class SettingsStore {
     public void setBypassCacheOnReload(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_bypass_cache_on_reload), isEnabled);
-        editor.commit();
+        editor.apply();
     }
 
     public boolean isBypassCacheOnReloadEnabled() {
@@ -754,7 +984,7 @@ public class SettingsStore {
     public void setDownloadsSortingOrder(@SortingContextMenuWidget.Order int order) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putInt(mContext.getString(R.string.settings_key_downloads_sorting_order), order);
-        editor.commit();
+        editor.apply();
     }
 
     public @Storage int getDownloadsSortingOrder() {
@@ -764,7 +994,7 @@ public class SettingsStore {
     public void setRemotePropsVersionName(String versionName) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putString(mContext.getString(R.string.settings_key_remote_props_version_name), versionName);
-        editor.commit();
+        editor.apply();
 
         mSettingsViewModel.setPropsVersionName(versionName);
     }
@@ -776,7 +1006,7 @@ public class SettingsStore {
     public void setAutocompleteEnabled(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_autocomplete), isEnabled);
-        editor.commit();
+        editor.apply();
     }
 
     public boolean isAutocompleteEnabled() {
@@ -794,17 +1024,27 @@ public class SettingsStore {
         } else {
             editor.remove(mContext.getString(R.string.settings_key_search_engine_id));
         }
-        editor.commit();
+        editor.apply();
     }
 
     public void setWebGLOutOfProcess(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_webgl_out_of_process), isEnabled);
-        editor.commit();
+        editor.apply();
     }
 
     public boolean isWebGLOutOfProcess() {
         return mPrefs.getBoolean(mContext.getString(R.string.settings_key_webgl_out_of_process), WEBGL_OUT_OF_PROCESS);
+    }
+
+    public void setLocalAddonAllowed(boolean isEnabled) {
+        SharedPreferences.Editor editor = mPrefs.edit();
+        editor.putBoolean(mContext.getString(R.string.settings_key_local_addon_allowed), isEnabled);
+        editor.apply();
+    }
+
+    public boolean isLocalAddonAllowed() {
+        return mPrefs.getBoolean(mContext.getString(R.string.settings_key_local_addon_allowed), LOCAL_ADDON_ALLOWED);
     }
 
     public int getPrefsLastResetVersionCode() {
@@ -814,7 +1054,7 @@ public class SettingsStore {
     public void setPrefsLastResetVersionCode(int versionCode) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putInt(mContext.getString(R.string.settings_key_prefs_last_reset_version_code), versionCode);
-        editor.commit();
+        editor.apply();
     }
 
     @Nullable
@@ -836,13 +1076,13 @@ public class SettingsStore {
     public void setRemoteProperties(@Nullable String json) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putString(mContext.getString(R.string.settings_key_remote_props), json);
-        editor.commit();
+        editor.apply();
     }
 
     public void recordPasswordsEncryptionKeyGenerated() {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_passwords_encryption_key_generated), true);
-        editor.commit();
+        editor.apply();
     }
 
     public boolean isPasswordsEncryptionKeyGenerated() {
@@ -852,7 +1092,7 @@ public class SettingsStore {
     public void setAutoFillEnabled(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_autofill_enabled), isEnabled);
-        editor.commit();
+        editor.apply();
     }
 
     public boolean isAutoFillEnabled() {
@@ -862,7 +1102,7 @@ public class SettingsStore {
     public void setLoginAutocompleteEnabled(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_login_autocomplete_enabled), isEnabled);
-        editor.commit();
+        editor.apply();
     }
 
     public boolean isLoginAutocompleteEnabled() {
@@ -872,7 +1112,7 @@ public class SettingsStore {
     public void setLoginSyncEnabled(boolean isEnabled) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_login_sync_enabled), isEnabled);
-        editor.commit();
+        editor.apply();
     }
 
     public boolean isLoginSyncEnabled() {
@@ -886,7 +1126,7 @@ public class SettingsStore {
         } else {
             editor.remove(mContext.getString(R.string.settings_key_tab_after_restore));
         }
-        editor.commit();
+        editor.apply();
     }
 
     public String getTabAfterRestore() {
@@ -896,7 +1136,7 @@ public class SettingsStore {
     public void setTermsServiceAccepted(boolean isAccepted) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_terms_service_accepted), isAccepted);
-        editor.commit();
+        editor.apply();
     }
 
     public boolean isTermsServiceAccepted() {
@@ -906,11 +1146,20 @@ public class SettingsStore {
     public void setPrivacyPolicyAccepted(boolean isAccepted) {
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.putBoolean(mContext.getString(R.string.settings_key_privacy_policy_accepted), isAccepted);
-        editor.commit();
+        editor.apply();
     }
 
     public boolean isPrivacyPolicyAccepted() {
         return mPrefs.getBoolean(mContext.getString(R.string.settings_key_privacy_policy_accepted), false);
     }
 
+    public void setWebAppsData(String aWebAppsData) {
+        SharedPreferences.Editor editor = mPrefs.edit();
+        editor.putString(mContext.getString(R.string.settings_key_web_apps_data), aWebAppsData);
+        editor.apply();
+    }
+
+    public String getWebAppsData() {
+        return mPrefs.getString(mContext.getString(R.string.settings_key_web_apps_data), "");
+    }
 }

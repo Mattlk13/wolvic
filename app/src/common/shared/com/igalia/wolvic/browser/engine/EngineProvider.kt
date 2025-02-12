@@ -38,13 +38,20 @@ object EngineProvider {
                     .enhancedTrackingProtectionLevel(settingsStore.trackingProtectionLevel)
                     .build())
             builder.displayDensityOverride(settingsStore.displayDensity)
-            builder.remoteDebuggingEnabled(settingsStore.isRemoteDebuggingEnabled)
             builder.displayDpiOverride(settingsStore.displayDpi)
-            builder.screenSizeOverride(settingsStore.maxWindowWidth, settingsStore.maxWindowHeight)
+            // This calculation ensures that screen.width and screen.height are always greater or
+            // equal than window.innerWidth and window.innerHeight, even with different densities.
+            builder.screenSizeOverride(
+                (settingsStore.maxWindowWidth * settingsStore.displayDpi / 100.0).toInt(),
+                (settingsStore.maxWindowHeight * settingsStore.displayDpi / 100.0).toInt()
+            )
+            builder.enterpriseRootsEnabled(settingsStore.isSystemRootCAEnabled)
             builder.inputAutoZoomEnabled(false)
             builder.doubleTapZoomingEnabled(false)
+            builder.forceUserScalableEnabled(false)
             builder.debugLogging(settingsStore.isDebugLoggingEnabled)
             builder.consoleOutput(settingsStore.isDebugLoggingEnabled)
+            builder.remoteDebuggingEnabled(settingsStore.isRemoteDebuggingEnabled)
             builder.loginAutofillEnabled(settingsStore.isAutoFillEnabled)
             builder.configFilePath(SessionUtils.prepareConfigurationPath(context))
 

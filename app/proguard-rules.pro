@@ -54,6 +54,8 @@
 -keep class com.igalia.wolvic.browser.engine.** {*;} # Keep state clases used by gson.
 -keep class com.igalia.wolvic.utils.RemoteProperties {*;} # Keep state clases used by gson.
 -keep class com.igalia.wolvic.utils.Environment {*;} # Keep state clases used by gson.
+-keep class com.google.gson.reflect.TypeToken { *; }    # Keep this specific gson class
+-keep class * extends com.google.gson.reflect.TypeToken # and its descendants.
 
 # --------------------------------------------------------------------
 # Keep classes from HTC SDK
@@ -62,15 +64,10 @@
 -keep class com.qualcomm.** {*;}
 
 # --------------------------------------------------------------------
-# Keep classes from PicoVR SDK
-# --------------------------------------------------------------------
--keep class com.psmart.vrlib.** {*;}
--keep class com.picovr.** {*;}
-
-# --------------------------------------------------------------------
-# App Services
+# AppServices & Components
 # --------------------------------------------------------------------
 -keep class mozilla.appservices.** {*;}
+-keep class mozilla.components.concept.engine.manifest.** {*;}
 
 # --------------------------------------------------------------------
 # Android ViewModel
@@ -88,6 +85,9 @@
 -keep class com.huawei.agconnect.**{*;}
 -keep class com.huawei.hms.analytics.**{*;}
 -keep class com.huawei.hms.push.**{*;}
+-keep class com.huawei.usblib.**{*;}
+-keep class com.huawei.hvr.**{*;}
+-keep class com.huawei.hmf.**{*;}
 
 -dontwarn **
 -target 1.7

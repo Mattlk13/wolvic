@@ -13,6 +13,7 @@
 #include "GestureDelegate.h"
 #include "VRLayer.h"
 #include "vrb/LoaderThread.h"
+#include "vrb/Matrix.h"
 
 #include <memory>
 
@@ -45,6 +46,7 @@ public:
   virtual void SetStageSize(const float aWidth, const float aDepth) = 0;
   virtual void SetSittingToStandingTransform(const vrb::Matrix& aTransform) = 0;
   virtual void CompleteEnumeration() = 0;
+  virtual void SetBlendModes(std::vector<device::BlendMode> aBlendModes) = 0;
 };
 
 class DeviceDelegate {
@@ -57,9 +59,19 @@ public:
       APPLY,
       DISCARD
   };
+  enum class ImmersiveXRSessionType {
+      VR,
+      AR
+  };
+  struct TrackedKeyboardInfo {
+      bool isActive;
+      vrb::Matrix transform;
+      std::vector<uint8_t> modelBuffer;
+  };
   virtual device::DeviceType GetDeviceType() { return device::UnknownType; }
   virtual void SetRenderMode(const device::RenderMode aMode) = 0;
   virtual device::RenderMode GetRenderMode() = 0;
+  virtual void SetImmersiveXRSessionType(const ImmersiveXRSessionType aSessionType) { mImmersiveXrSessionType = aSessionType; }
   virtual void RegisterImmersiveDisplay(ImmersiveDisplayPtr aDisplay) = 0;
   virtual void SetImmersiveSize(const uint32_t aEyeWidth, const uint32_t aEyeHeight) {};
   virtual GestureDelegateConstPtr GetGestureDelegate() = 0;
@@ -67,12 +79,15 @@ public:
   virtual const vrb::Matrix& GetHeadTransform() const = 0;
   virtual const vrb::Matrix& GetReorientTransform() const = 0;
   virtual void SetReorientTransform(const vrb::Matrix& aMatrix) = 0;
+  enum class ReorientMode { SIX_DOF, NO_ROLL };
+  virtual void Reorient(const vrb::Matrix&, ReorientMode) = 0;
   virtual void SetClearColor(const vrb::Color& aColor) = 0;
   virtual void SetClipPlanes(const float aNear, const float aFar) = 0;
   virtual void SetControllerDelegate(ControllerDelegatePtr& aController) = 0;
   virtual void ReleaseControllerDelegate() = 0;
   virtual int32_t GetControllerModelCount() const = 0;
   virtual const std::string GetControllerModelName(const int32_t aModelIndex) const { return nullptr; };
+  virtual bool IsPositionTrackingSupported() const { return false; };
   virtual void SetCPULevel(const device::CPULevel aLevel) {};
   virtual void ProcessEvents() = 0;
   virtual bool SupportsFramePrediction(FramePrediction aPrediction) const {
@@ -80,6 +95,7 @@ public:
   }
   virtual void StartFrame(const FramePrediction aPrediction = FramePrediction::NO_FRAME_AHEAD) = 0;
   virtual void BindEye(const device::Eye aWhich) = 0;
+  virtual bool ShouldRender() const { return mShouldRender; };
   virtual void EndFrame(const FrameEndMode aMode = FrameEndMode::APPLY) = 0;
   virtual bool IsInGazeMode() const { return false; };
   virtual int32_t GazeModeIndex() const { return -1; };
@@ -92,17 +108,48 @@ public:
   virtual VRLayerProjectionPtr CreateLayerProjection(VRLayerSurface::SurfaceType aSurfaceType) { return nullptr; }
   virtual VRLayerCubePtr CreateLayerCube(int32_t aWidth, int32_t aHeight, GLint aInternalFormat) { return nullptr; }
   virtual VRLayerEquirectPtr CreateLayerEquirect(const VRLayerPtr &aSource) { return nullptr; }
+  virtual void CreateLayerPassthrough() { }
   virtual void DeleteLayer(const VRLayerPtr& aLayer) {};
   virtual bool IsControllerLightEnabled() const { return true; }
   virtual vrb::LoadTask GetControllerModelTask(int32_t index) { return nullptr; } ;
-  virtual void OnControllersReady(const std::function<void()>& callback) {
+  virtual void OnControllersCreated(std::function<void()> callback) { callback(); }
+  typedef std::function<bool()> ControllersReadyCallback;
+  virtual void OnControllersReady(const ControllersReadyCallback& callback) {
     callback();
   }
+  class ReorientClient {
+  public:
+    virtual void OnReorient() = 0;
+    virtual ~ReorientClient() {};
+  };
+  void SetReorientClient(ReorientClient* client) { mReorientClient = client; }
+  virtual bool IsPassthroughEnabled() const { return mIsPassthroughEnabled; }
+  virtual void TogglePassthroughEnabled() { mIsPassthroughEnabled = !mIsPassthroughEnabled; }
+  virtual bool usesPassthroughCompositorLayer() const { return false; }
+  virtual int32_t GetHandTrackingJointIndex(const HandTrackingJoints aJoint) { return -1; };
+  virtual void UpdateHandMesh(const uint32_t aControllerIndex, const std::vector<vrb::Matrix>& handJointTransforms,
+                              const vrb::GroupPtr& aRoot, const bool aEnabled, const bool leftHanded) {};
+  virtual void DrawHandMesh(const uint32_t aControllerIndex, const vrb::Camera&) {};
+  virtual void SetHitDistance(const float) {};
+  enum class PointerMode {
+    TRACKED_POINTER,
+    TRACKED_EYE
+  };
+  virtual void SetPointerMode(const PointerMode) {};
+  virtual void SetImmersiveBlendMode(device::BlendMode) {};
+  virtual bool PopulateTrackedKeyboardInfo(TrackedKeyboardInfo& keyboardInfo) { return false; };
+  virtual void SetHandTrackingEnabled(bool value) {};
+  virtual float GetSelectThreshold(int32_t controllerIndex) { return 1.f; };
+
 protected:
   DeviceDelegate() {}
 
   virtual ~DeviceDelegate() {}
 
+  bool mShouldRender { false };
+  ReorientClient* mReorientClient { nullptr };
+  bool mIsPassthroughEnabled { false };
+  ImmersiveXRSessionType mImmersiveXrSessionType { ImmersiveXRSessionType::VR };
 private:
   VRB_NO_DEFAULTS(DeviceDelegate)
 };

@@ -6,20 +6,23 @@
 package com.igalia.wolvic.browser.components
 
 import android.content.Context
+import android.util.AttributeSet
+import android.util.JsonReader
 import com.igalia.wolvic.browser.api.*
 import com.igalia.wolvic.browser.engine.Session
 import com.igalia.wolvic.browser.engine.SessionStore
 import com.igalia.wolvic.ui.widgets.WidgetManagerDelegate
-import mozilla.components.concept.engine.CancellableOperation
-import mozilla.components.concept.engine.Engine
-import mozilla.components.concept.engine.EngineSession
+import mozilla.components.concept.base.profiler.Profiler
+import mozilla.components.concept.engine.*
+import mozilla.components.concept.engine.utils.EngineVersion
 import mozilla.components.concept.engine.webextension.*
 import mozilla.components.support.ktx.kotlin.isResourceUrl
+import org.json.JSONObject
 
 class WolvicWebExtensionRuntime(
         private val context: Context,
         private val runtime: WRuntime
-): WebExtensionRuntime {
+) : WebExtensionRuntime, Engine {
 
     private var webExtensionDelegate: WebExtensionDelegate? = null
     private val webExtensionActionHandler = object : ActionHandler {
@@ -35,7 +38,7 @@ class WolvicWebExtensionRuntime(
             val activeSession = SessionStore.get().activeSession
             val session: Session = SessionStore.get().createWebExtensionSession(activeSession.isPrivateMode);
             session.setParentSession(activeSession)
-            session.uaMode = WSessionSettings.USER_AGENT_MODE_DESKTOP
+            session.setUaMode(WSessionSettings.USER_AGENT_MODE_DESKTOP, true)
             val engineSession = WolvicEngineSession(session)
             (context as WidgetManagerDelegate).windows.onTabSelect(session)
             return webExtensionDelegate?.onToggleActionPopup(extension, engineSession, action)
@@ -51,40 +54,61 @@ class WolvicWebExtensionRuntime(
      * See [Engine.installWebExtension].
      */
     override fun installWebExtension(
-            id: String,
-            url: String,
-            onSuccess: ((WebExtension) -> Unit),
-            onError: ((String, Throwable) -> Unit)
+        url: String,
+        installationMethod: InstallationMethod?,
+        onSuccess: (WebExtension) -> Unit,
+        onError: (Throwable) -> Unit
     ): CancellableOperation {
 
         val onInstallSuccess: ((WebExtension) -> Unit) = {
             webExtensionDelegate?.onInstalled(it)
             it.registerActionHandler(webExtensionActionHandler)
-            it.registerTabHandler(webExtensionTabHandler)
+            it.registerTabHandler(webExtensionTabHandler, null)
             onSuccess(it)
         }
 
-        val result = if (url.isResourceUrl()) {
-            runtime.webExtensionController.ensureBuiltIn(url, id).apply {
-                then({
-                    onInstallSuccess(it!!)
-                    WResult.create<Void>()
-                }, { throwable ->
-                    onError(id, throwable)
-                    WResult.create<Void>()
-                })
-            }
-        } else {
+        val result =
             runtime.webExtensionController.install(url).apply {
                 then({
                     onInstallSuccess(it!!)
                     WResult.create<Void>()
                 }, { throwable ->
-                    onError(id, throwable)
+                    onError(throwable)
                     WResult.create<Void>()
                 })
             }
+
+        return result.asCancellableOperation()
+    }
+
+    /**
+     * See [Engine.installBuiltInWebExtension].
+     */
+    override fun installBuiltInWebExtension(
+        id:String,
+        url: String,
+        onSuccess: (WebExtension) -> Unit,
+        onError: (Throwable) -> Unit
+    ): CancellableOperation {
+
+        val onInstallSuccess: ((WebExtension) -> Unit) = {
+            webExtensionDelegate?.onInstalled(it)
+            it.registerActionHandler(webExtensionActionHandler)
+            it.registerTabHandler(webExtensionTabHandler, null)
+            onSuccess(it)
         }
+
+        val result =
+            runtime.webExtensionController.ensureBuiltIn(url, id).apply {
+                then({
+                    onInstallSuccess(it!!)
+                    WResult.create<Void>()
+                }, { throwable ->
+                    onError(throwable)
+                    WResult.create<Void>()
+                })
+            }
+
         return result.asCancellableOperation()
     }
 
@@ -117,7 +141,7 @@ class WolvicWebExtensionRuntime(
         runtime.webExtensionController.update(extension).then({ updatedExtension ->
             if (updatedExtension != null) {
                 updatedExtension.registerActionHandler(webExtensionActionHandler)
-                updatedExtension.registerTabHandler(webExtensionTabHandler)
+                updatedExtension.registerTabHandler(webExtensionTabHandler, null)
             }
             onSuccess(updatedExtension)
             WResult.create<Void>()
@@ -130,7 +154,6 @@ class WolvicWebExtensionRuntime(
     /**
      * See [Engine.registerWebExtensionDelegate].
      */
-    @Suppress("Deprecation")
     override fun registerWebExtensionDelegate(
             webExtensionDelegate: WebExtensionDelegate
     ) {
@@ -138,11 +161,16 @@ class WolvicWebExtensionRuntime(
 
         val promptDelegate = object : WWebExtensionController.PromptDelegate {
             override fun onInstallPrompt(extension: WebExtension): WResult<WAllowOrDeny>? {
-                return if (webExtensionDelegate.onInstallPermissionRequest(extension)) {
-                    WResult.allow()
-                } else {
-                    WResult.deny()
+                val result = WResult.allow()
+                extension.getMetadata()?.let {
+                    webExtensionDelegate.onInstallPermissionRequest(
+                        extension,
+                        it.requiredPermissions,
+                        ) { allow -> if (allow) result.complete(WAllowOrDeny.ALLOW) else result.complete(
+                        WAllowOrDeny.DENY)
+                    }
                 }
+                return result
             }
 
             override fun onUpdatePrompt(
@@ -184,7 +212,7 @@ class WolvicWebExtensionRuntime(
 
             extensions.forEach { extension ->
                 extension.registerActionHandler(webExtensionActionHandler)
-                extension.registerTabHandler(webExtensionTabHandler)
+                extension.registerTabHandler(webExtensionTabHandler, null)
             }
 
             onSuccess(extensions)
@@ -205,8 +233,10 @@ class WolvicWebExtensionRuntime(
             onError: (Throwable) -> Unit
     ) {
         runtime.webExtensionController.enable(extension, source.id).then({
-            webExtensionDelegate?.onEnabled(extension)
-            onSuccess(extension)
+            if (it != null) {
+                webExtensionDelegate?.onEnabled(it)
+                onSuccess(it)
+            }
             WResult.create<Void>()
         }, { throwable ->
             onError(throwable)
@@ -224,8 +254,10 @@ class WolvicWebExtensionRuntime(
             onError: (Throwable) -> Unit
     ) {
         runtime.webExtensionController.disable(extension, source.id).then({
-            webExtensionDelegate?.onDisabled(extension)
-            onSuccess(extension)
+            if (it != null) {
+                webExtensionDelegate?.onDisabled(it)
+                onSuccess(it)
+            }
             WResult.create<Void>()
         }, { throwable ->
             onError(throwable)
@@ -254,6 +286,39 @@ class WolvicWebExtensionRuntime(
             onError(throwable)
             WResult.create<Void>()
         })
+    }
+
+    // Functionality specific to the Engine interface.
+
+    override val profiler: Profiler?
+        get() = TODO("Not yet implemented")
+    override val settings: Settings
+        get() = TODO("Not yet implemented")
+    override val version: EngineVersion
+        get() = TODO("Not yet implemented")
+
+    override fun name(): String {
+        TODO("Not yet implemented")
+    }
+
+    override fun createSession(private: Boolean, contextId: String?): EngineSession {
+        TODO("Not yet implemented")
+    }
+
+    override fun createSessionState(json: JSONObject): EngineSessionState {
+        TODO("Not yet implemented")
+    }
+
+    override fun createSessionStateFrom(reader: JsonReader): EngineSessionState {
+        TODO("Not yet implemented");
+    }
+
+    override fun createView(context: Context, attrs: AttributeSet?): EngineView {
+        TODO("Not yet implemented")
+    }
+
+    override fun speculativeConnect(url: String) {
+        TODO("Not yet implemented")
     }
 
 }

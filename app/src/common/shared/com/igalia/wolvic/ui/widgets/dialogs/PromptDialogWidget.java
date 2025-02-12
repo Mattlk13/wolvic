@@ -38,6 +38,7 @@ public class PromptDialogWidget extends UIDialog {
 
     public static final int NEGATIVE = 0;
     public static final int POSITIVE = 1;
+    public static final int BACK = 2;
 
     protected PromptDialogBinding mBinding;
     private Delegate mAppDialogDelegate;
@@ -70,6 +71,11 @@ public class PromptDialogWidget extends UIDialog {
                 mAppDialogDelegate.onButtonClicked(POSITIVE, isChecked());
             }
         });
+        mBinding.backButton.setOnClickListener(v -> {
+            if (mAppDialogDelegate != null) {
+                mAppDialogDelegate.onButtonClicked(BACK, isChecked());
+            }
+        });
     }
 
     @Override
@@ -91,8 +97,13 @@ public class PromptDialogWidget extends UIDialog {
         aPlacement.parentAnchorX = 0.5f;
         aPlacement.translationY = WidgetPlacement.unitFromMeters(getContext(), R.dimen.settings_world_y) -
                 WidgetPlacement.unitFromMeters(getContext(), R.dimen.window_world_y);
-        aPlacement.translationZ = WidgetPlacement.unitFromMeters(getContext(), R.dimen.settings_world_z) -
-                WidgetPlacement.unitFromMeters(getContext(), R.dimen.window_world_z);
+        updatePlacementTranslationZ();
+    }
+
+    @Override
+    public void updatePlacementTranslationZ() {
+        getPlacement().translationZ = WidgetPlacement.unitFromMeters(getContext(), R.dimen.tray_world_z) -
+                WidgetPlacement.getWindowWorldZMeters(getContext());
     }
 
     @Override
@@ -224,14 +235,13 @@ public class PromptDialogWidget extends UIDialog {
     }
 
     public void setDescription(String description) {
-        mBinding.title.setText(description);
+        mBinding.description.setText(description);
     }
 
     public void setButtons(@NonNull @StringRes int[] buttons) {
         if (buttons.length > 0) {
             mBinding.leftButton.setText(buttons[NEGATIVE]);
             mBinding.leftButton.setVisibility(View.VISIBLE);
-
         } else {
             mBinding.leftButton.setVisibility(View.GONE);
         }
@@ -239,9 +249,14 @@ public class PromptDialogWidget extends UIDialog {
         if (buttons.length > 1) {
             mBinding.rightButton.setText(buttons[POSITIVE]);
             mBinding.rightButton.setVisibility(View.VISIBLE);
-
         } else {
             mBinding.rightButton.setVisibility(View.GONE);
+        }
+
+        if (buttons.length > 2) {
+            mBinding.backButton.setVisibility(View.VISIBLE);
+        } else {
+            mBinding.backButton.setVisibility(View.GONE);
         }
     }
 
@@ -249,7 +264,6 @@ public class PromptDialogWidget extends UIDialog {
         if (buttons.length > 0) {
             mBinding.leftButton.setText(buttons[NEGATIVE]);
             mBinding.leftButton.setVisibility(View.VISIBLE);
-
         } else {
             mBinding.leftButton.setVisibility(View.GONE);
         }
@@ -257,14 +271,27 @@ public class PromptDialogWidget extends UIDialog {
         if (buttons.length > 1) {
             mBinding.rightButton.setText(buttons[POSITIVE]);
             mBinding.rightButton.setVisibility(View.VISIBLE);
-
         } else {
             mBinding.rightButton.setVisibility(View.GONE);
+        }
+
+        if (buttons.length > 2) {
+            mBinding.backButton.setVisibility(View.VISIBLE);
+        } else {
+            mBinding.backButton.setVisibility(View.GONE);
         }
     }
 
     public boolean isChecked() {
         return mBinding.checkbox.isChecked();
+    }
+
+    public void setChecked(boolean checked) {
+        mBinding.checkbox.setChecked(checked);
+    }
+
+    public void setTitleGravity(int gravity) {
+        mBinding.title.setGravity(gravity);
     }
 
     public void setBodyGravity(int gravity) {

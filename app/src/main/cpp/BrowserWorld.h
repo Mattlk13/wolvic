@@ -24,7 +24,7 @@ typedef std::shared_ptr<WidgetPlacement> WidgetPlacementPtr;
 class Widget;
 typedef std::shared_ptr<Widget> WidgetPtr;
 
-class BrowserWorld {
+class BrowserWorld : public DeviceDelegate::ReorientClient {
 public:
   static BrowserWorld& Instance();
   static void Destroy();
@@ -35,6 +35,7 @@ public:
   bool IsPaused() const;
   void InitializeJava(JNIEnv* aEnv, jobject& aActivity, jobject& aAssetManager);
   void InitializeGL();
+  bool IsGLInitialized() const;
   void ShutdownJava();
   void ShutdownGL();
   void Draw(){
@@ -46,6 +47,10 @@ public:
   void StartFrame();
   void Draw(device::Eye aEye);
   void EndFrame();
+  void TriggerHapticFeedback(const float aPulseDuration, const float aPulseIntensity, const int aControllerId);
+  void TogglePassthrough();
+  enum class LockMode { NO_LOCK, HEAD, CONTROLLER };
+  void SetLockMode(LockMode);
   void SetTemporaryFilePath(const std::string& aPath);
   void UpdateEnvironment();
   void UpdatePointerColor();
@@ -54,9 +59,10 @@ public:
   void UpdateWidget(int32_t aHandle, const WidgetPlacementPtr& aPlacement);
   void UpdateWidgetRecursive(int32_t aHandle, const WidgetPlacementPtr& aPlacement);
   void RemoveWidget(int32_t aHandle);
+  void RecreateWidgetSurface(int32_t aHandle);
   void StartWidgetResize(int32_t aHandle, const vrb::Vector& aMaxSize, const vrb::Vector& aMinSize);
   void FinishWidgetResize(int32_t aHandle);
-  void StartWidgetMove(int32_t aHandle, const int32_t aMoveBehavour);
+  void StartWidgetMove(int32_t aHandle, const int32_t aMoveBehaviour);
   void FinishWidgetMove();
   void UpdateVisibleWidgets();
   void LayoutWidget(int32_t aHandle);
@@ -72,7 +78,13 @@ public:
   void SetWebXRInterstitalState(const WebXRInterstialState aState);
   void SetIsServo(const bool aIsServo);
   void SetCPULevel(const device::CPULevel aLevel);
+  void SetPointerMode(crow::DeviceDelegate::PointerMode);
+  void SetHandTrackingEnabled(bool);
   JNIEnv* GetJNIEnv() const;
+  void OnReorient() override;
+#if HVR
+  bool WasButtonAppPressed();
+#endif
 protected:
   struct State;
   static BrowserWorldPtr Create();
@@ -87,8 +99,12 @@ protected:
   void DrawWebXRInterstitial(device::Eye aEye);
   void DrawSplashAnimation(device::Eye aEye);
   void CreateSkyBox(const std::string& aBasePath, const std::string& aExtension);
-  void CreateEnvironment();
 private:
+#if defined(OCULUSVR) && defined(STORE_BUILD)
+  void ProcessOVRPlatformEvents();
+#endif
+  vrb::Matrix GetActiveControllerOrientation() const;
+  void ThrottledWindowDistanceComputation(const vrb::Matrix& reorientTransform);
   State& m;
   BrowserWorld() = delete;
   VRB_NO_DEFAULTS(BrowserWorld)

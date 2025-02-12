@@ -6,15 +6,19 @@
 package com.igalia.wolvic.ui.widgets.settings;
 
 import android.content.Context;
+import android.graphics.Point;
 import android.view.LayoutInflater;
 
 import androidx.databinding.DataBindingUtil;
 
 import com.igalia.wolvic.R;
+import com.igalia.wolvic.audio.AudioEngine;
 import com.igalia.wolvic.browser.SettingsStore;
 import com.igalia.wolvic.databinding.OptionsControllerBinding;
 import com.igalia.wolvic.ui.views.settings.RadioGroupSetting;
+import com.igalia.wolvic.ui.views.settings.SwitchSetting;
 import com.igalia.wolvic.ui.widgets.WidgetManagerDelegate;
+import com.igalia.wolvic.ui.widgets.WidgetPlacement;
 
 class ControllerOptionsView extends SettingsView {
 
@@ -53,6 +57,25 @@ class ControllerOptionsView extends SettingsView {
         int scrollDirection = SettingsStore.getInstance(getContext()).getScrollDirection();
         mBinding.scrollDirectionRadio.setOnCheckedChangeListener(mScrollDirectionListener);
         setScrollDirection(mBinding.scrollDirectionRadio.getIdForValue(scrollDirection), false);
+
+        mBinding.soundEffectSwitch.setOnCheckedChangeListener(mSoundEffectListener);
+        setSoundEffect(SettingsStore.getInstance(getContext()).isAudioEnabled(), false);
+
+        mBinding.hapticFeedbackSwitch.setOnCheckedChangeListener(mHapticFeedbackListener);
+        setHapticFeedbackEnabled(SettingsStore.getInstance(getContext()).isHapticFeedbackEnabled(), false);
+
+        if (mWidgetManager.isEyeTrackingSupported()) {
+            mBinding.pointerModeRadio.setOnCheckedChangeListener(mPointerModeListener);
+            setPointerMode(SettingsStore.getInstance(getContext()).getPointerMode(), false);
+        } else {
+            mBinding.pointerModeRadio.setVisibility(GONE);
+        }
+
+        if (mWidgetManager.isHandTrackingSupported() && mWidgetManager.areControllersAvailable()) {
+            setHandTrackingEnabled(mWidgetManager.isHandTrackingEnabled(), false);
+        } else {
+            mBinding.handtrackingSwitch.setVisibility(GONE);
+        }
     }
 
     private void resetOptions() {
@@ -62,6 +85,10 @@ class ControllerOptionsView extends SettingsView {
         if (!mBinding.scrollDirectionRadio.getValueForId(mBinding.scrollDirectionRadio.getCheckedRadioButtonId()).equals(SettingsStore.SCROLL_DIRECTION_DEFAULT)) {
             setScrollDirection(mBinding.scrollDirectionRadio.getIdForValue(SettingsStore.SCROLL_DIRECTION_DEFAULT), true);
         }
+        setSoundEffect(SettingsStore.AUDIO_ENABLED, true);
+        setHapticFeedbackEnabled(SettingsStore.HAPTIC_FEEDBACK_ENABLED, true);
+        setPointerMode(SettingsStore.POINTER_MODE_DEFAULT, true);
+        setHandTrackingEnabled(true, true);
     }
 
     private void setPointerColor(int checkedId, boolean doApply) {
@@ -85,6 +112,48 @@ class ControllerOptionsView extends SettingsView {
         }
     }
 
+    private void setSoundEffect(boolean value, boolean doApply) {
+        mBinding.soundEffectSwitch.setOnCheckedChangeListener(null);
+        mBinding.soundEffectSwitch.setValue(value, false);
+        mBinding.soundEffectSwitch.setOnCheckedChangeListener(mSoundEffectListener);
+
+        if (doApply) {
+            SettingsStore.getInstance(getContext()).setAudioEnabled(value);
+            AudioEngine.fromContext(getContext()).setEnabled(value);
+        }
+    }
+
+    private void setHapticFeedbackEnabled(boolean value, boolean doApply) {
+        mBinding.hapticFeedbackSwitch.setOnCheckedChangeListener(null);
+        mBinding.hapticFeedbackSwitch.setValue(value, false);
+        mBinding.hapticFeedbackSwitch.setOnCheckedChangeListener(mHapticFeedbackListener);
+
+        if (doApply) {
+            SettingsStore.getInstance(getContext()).setHapticFeedbackEnabled(value);
+        }
+    }
+
+    private void setPointerMode(@WidgetManagerDelegate.PointerMode int value, boolean doApply) {
+        mBinding.pointerModeRadio.setOnCheckedChangeListener(null);
+        mBinding.pointerModeRadio.setChecked(value, false);
+        mBinding.pointerModeRadio.setOnCheckedChangeListener(mPointerModeListener);
+
+        if (doApply) {
+            SettingsStore.getInstance(getContext()).setPointerMode(value);
+            mWidgetManager.setPointerMode(value);
+        }
+    }
+
+    private void setHandTrackingEnabled(boolean value, boolean doApply) {
+        mBinding.handtrackingSwitch.setOnCheckedChangeListener(null);
+        mBinding.handtrackingSwitch.setValue(value, false);
+        mBinding.handtrackingSwitch.setOnCheckedChangeListener(mHandtrackingListener);
+
+        if (doApply) {
+            mWidgetManager.setHandTrackingEnabled(value);
+        }
+    }
+
     private RadioGroupSetting.OnCheckedChangeListener mPointerColorListener = (radioGroup, checkedId, doApply) -> {
         setPointerColor(checkedId, doApply);
     };
@@ -92,6 +161,38 @@ class ControllerOptionsView extends SettingsView {
     private RadioGroupSetting.OnCheckedChangeListener mScrollDirectionListener = (radioGroup, checkedId, doApply) -> {
         setScrollDirection(checkedId, doApply);
     };
+
+    private SwitchSetting.OnCheckedChangeListener mSoundEffectListener = (compoundButton, enabled, apply) -> {
+        setSoundEffect(enabled, true);
+    };
+
+    private SwitchSetting.OnCheckedChangeListener mHapticFeedbackListener = (compoundButton, enabled, apply) ->
+    setHapticFeedbackEnabled(enabled, true);
+
+    private RadioGroupSetting.OnCheckedChangeListener mPointerModeListener = (compoundButton, checkedId, doApply) -> {
+        if (checkedId == WidgetManagerDelegate.TRACKED_POINTER) {
+            setPointerMode(checkedId, doApply);
+            return;
+        }
+        assert checkedId == WidgetManagerDelegate.TRACKED_EYE;
+        mWidgetManager.checkEyeTrackingPermissions((aPermissionGranted) -> {
+            if (aPermissionGranted) {
+                setPointerMode(checkedId, doApply);
+            } else {
+                // Revert to pointer mode if permission is not granted
+                setPointerMode(WidgetManagerDelegate.TRACKED_POINTER, false);
+            }
+        });
+    };
+
+    private SwitchSetting.OnCheckedChangeListener mHandtrackingListener = (compoundButton, enabled, apply) ->
+            setHandTrackingEnabled(enabled, true);
+
+    @Override
+    public Point getDimensions() {
+        return new Point( WidgetPlacement.dpDimension(getContext(), R.dimen.settings_dialog_width),
+                WidgetPlacement.dpDimension(getContext(), R.dimen.controller_options_height));
+    }
 
     @Override
     protected SettingViewType getType() {
